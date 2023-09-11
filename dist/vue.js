@@ -64,11 +64,64 @@
     return typeof key === "symbol" ? key : String(key);
   }
 
+  var oldArrayproto = Array.prototype;
+  var newArrayproto = Object.create(oldArrayproto);
+  var methods = ["shift", "unshift", "pop", "push", "reverse", "sort", "splice"]; // concat slice不会改变原数组
+
+  methods.forEach(function (method) {
+    newArrayproto[method] = function () {
+      var _oldArrayproto$method;
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+      // 重写数组的方法
+      var result = (_oldArrayproto$method = oldArrayproto[method]).call.apply(_oldArrayproto$method, [this].concat(args)); // 内部调用原来的方法，函数劫持 切片编程
+      console.log(method);
+
+      // 对对新增的数据再次观测
+      var inserted;
+      var ob = this.__ob__; //外部data调用方法，所以this就指向data
+      switch (method) {
+        case 'push':
+        case "unshift":
+          //vm.arr.unshift({a: 100})
+          inserted = args;
+          break;
+        case "splice":
+          //vm.arr.splice(0, 1, 55,56,57)
+          inserted = args.slice(2);
+          break;
+      }
+      console.log(inserted);
+      if (inserted) {
+        ob.observeArray(inserted);
+      }
+      return result;
+    };
+  });
+
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
       // Object.defineProperty智能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
-      this.walk(data);
+
+      // data.__ob__ = this //给data加上walk observeArray方法，array.js要使用以给新数据加上数据监测
+      // data.__proto__ = newArrayproto;会发生死循环，__ob__会被当做walk的key,defineReactive
+      // 中调用observe，再次return new Observe(data)，又加上data.__proto__ = newArrayproto;
+      // 再次执行walk,陷入死循环，所以修改该属性为不可枚举即可解决
+      Object.defineProperties(data, _defineProperty({}, '__ob__', {
+        value: this,
+        enumerable: false
+      }));
+
+      // 不能给数组中的每个基本数据类型加上响应式，但是引用数据类型要加上响应式
+      if (Array.isArray(data)) {
+        data.__proto__ = newArrayproto;
+        // 这里我们要重新重写数组的7个方法，但同时保留其他的方法
+        this.observeArray(data);
+      } else {
+        this.walk(data);
+      }
     }
     _createClass(Observe, [{
       key: "walk",
@@ -78,6 +131,13 @@
           return defineReactive(data, key, data[key]);
         });
       }
+    }, {
+      key: "observeArray",
+      value: function observeArray(data) {
+        data.forEach(function (item) {
+          return observe(item);
+        });
+      }
     }]);
     return Observe;
   }();
@@ -85,12 +145,15 @@
     observe(value);
     Object.defineProperties(target, _defineProperty({}, key, {
       get: function get() {
-        console.log("用户取值了");
+        //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
+        //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
+        console.log("用户取值了", value);
         return value;
       },
       set: function set(newValue) {
         console.log("用户更改值了");
         if (value === newValue) return;
+        observe(newValue); // 每一个新值也同样需要进行数据代理
         value = newValue;
       }
     }));
@@ -98,6 +161,11 @@
   function observe(data) {
     if (_typeof(data) !== 'object' || data == null) {
       return; // 只对对象数据劫持
+    }
+
+    if (data.__ob__ instanceof Observe) {
+      // 说明数据已经被劫持过，直接返回
+      return data.__ob__;
     }
 
     // 被劫持过则不需要在劫持(判断是否被劫持,可以增添一个实例，用实例来判断是否被劫持过)
