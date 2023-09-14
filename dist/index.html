@@ -6,6 +6,19 @@
     <title>Document</title>
 </head>
 <body>
+    <!-- <div id="app" style="color:skyblue;font-size: 15px;font-weight: 50;">
+        {{arr[0]}}
+        <span style="color:red">
+            {{arr[3].JNTM}}  Terraria {{arr[1]}}
+            <p>{{arr[2]}}</p>
+        </span>
+    </div> -->
+    <div id="app" style="color:red;background-color:yellow;">
+        <div style="color:red">
+{{arr[3].JNTM}}  Terraria {{arr[1]}}  Terraria
+        </div>
+        <span>{{arr[2]}}</span>
+    </div>
     <script src="vue.js"></script>
     <script>
         // 数据监控
@@ -20,11 +33,11 @@
                     },
                     arr:["FSX", "TONE", "DEAD", {"JNTM": "XHZ"}]
                 }
-            }
+            },
+            // el: "#app",
+            // template: '<div>蔡徐坤</div>'
         })
-        // vm.arr.shift();
-        // vm.arr.unshift({a:100})
-        // console.log(vm.arr);
+        vm.$mount('#app')
     </script>
 </body>
 </html>

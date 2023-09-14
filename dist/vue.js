@@ -4,6 +4,33 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+  function _iterableToArrayLimit(r, l) {
+    var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"];
+    if (null != t) {
+      var e,
+        n,
+        i,
+        u,
+        a = [],
+        f = !0,
+        o = !1;
+      try {
+        if (i = (t = t.call(r)).next, 0 === l) {
+          if (Object(t) !== t) return;
+          f = !1;
+        } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0);
+      } catch (r) {
+        o = !0, n = r;
+      } finally {
+        try {
+          if (!f && null != t.return && (u = t.return(), Object(u) !== u)) return;
+        } finally {
+          if (o) throw n;
+        }
+      }
+      return a;
+    }
+  }
   function _typeof(o) {
     "@babel/helpers - typeof";
 
@@ -49,6 +76,28 @@
     }
     return obj;
   }
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+    return arr2;
+  }
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
   function _toPrimitive(input, hint) {
     if (typeof input !== "object" || input === null) return input;
     var prim = input[Symbol.toPrimitive];
@@ -76,7 +125,7 @@
       }
       // 重写数组的方法
       var result = (_oldArrayproto$method = oldArrayproto[method]).call.apply(_oldArrayproto$method, [this].concat(args)); // 内部调用原来的方法，函数劫持 切片编程
-      console.log(method);
+      // console.log(method);
 
       // 对对新增的数据再次观测
       var inserted;
@@ -92,7 +141,7 @@
           inserted = args.slice(2);
           break;
       }
-      console.log(inserted);
+      // console.log(inserted);
       if (inserted) {
         ob.observeArray(inserted);
       }
@@ -103,10 +152,10 @@
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
-      // Object.defineProperty智能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
+      // Object.defineProperty只能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
 
       // data.__ob__ = this //给data加上walk observeArray方法，array.js要使用以给新数据加上数据监测
-      // data.__proto__ = newArrayproto;会发生死循环，__ob__会被当做walk的key,defineReactive
+      // data.__ob__ = this;会发生死循环，__ob__会被当做walk的key,defineReactive
       // 中调用observe，再次return new Observe(data)，又加上data.__proto__ = newArrayproto;
       // 再次执行walk,陷入死循环，所以修改该属性为不可枚举即可解决
       Object.defineProperties(data, _defineProperty({}, '__ob__', {
@@ -204,6 +253,214 @@
     }
   }
 
+  // Regular Expressions for parsing tags and attributes
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
+  // var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z".concat(unicodeRegExp.source, "]*");
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*";
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")");
+  var startTagOpen = new RegExp("^<".concat(qnameCapture));
+  var startTagClose = /^\s*(\/?)>/;
+  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>"));
+  function parseHTML(html) {
+    var ELEMENT_TYPE = 1;
+    var TEXT_TYPE = 3;
+    var stack = [];
+    var currentParent;
+    var root;
+    function createASTElement(tag, attrs) {
+      return {
+        tag: tag,
+        type: ELEMENT_TYPE,
+        children: [],
+        attrs: attrs,
+        parent: null
+      };
+    }
+    function start(tar, attrs) {
+      // debugger
+      var node = createASTElement(tar, attrs);
+      if (!root) {
+        root = node;
+      }
+      if (currentParent) {
+        node.parent = currentParent;
+        currentParent.children.push(node);
+        // console.log(currentParent);
+      }
+
+      stack.push(node);
+      currentParent = node;
+    }
+    function end(tag) {
+      stack.pop();
+      currentParent = stack[stack.length - 1];
+    }
+    function chars(text) {
+      text = text.replace(/\s/g, '');
+      // console.log(text);
+      text && currentParent.children.push({
+        type: TEXT_TYPE,
+        text: text,
+        parent: currentParent
+      });
+      // console.log("currentParent: ",currentParent);
+    }
+    function advance(n) {
+      html = html.substring(n);
+    }
+    function parseStartTag() {
+      var start = html.match(startTagOpen);
+      // console.log("1 start: ",start);
+      if (start) {
+        var match = {
+          tarName: start[1],
+          attrs: []
+        };
+        advance(start[0].length);
+        // console.log("2 html: ",html);
+        var attr, _end;
+        while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+          advance(attr[0].length);
+          // console.log("3 attr: ",attr);
+          // console.log("4 html: ",html);
+          match.attrs.push({
+            name: attr[1],
+            value: attr[3] || attr[4] || attr[5] || true
+          });
+          // console.log("5 match: ",match);
+        }
+
+        if (_end) {
+          // console.log("7 end: ",end);
+          advance(_end[0].length);
+        }
+        // console.log("7 match: ",match);
+        return match;
+      }
+      return false;
+    }
+    while (html) {
+      var textEnd = html.indexOf('<');
+      // console.log("8 html: ",html);
+      // console.log("8 textEnd: ",textEnd);
+      if (textEnd == 0) {
+        var startTagMatch = parseStartTag();
+        // console.log("startTagMatch: ",startTagMatch);
+        if (startTagMatch) {
+          // console.log("9 startTagMatch: ",startTagMatch);
+          start(startTagMatch.tarName, startTagMatch.attrs);
+          continue;
+        }
+        var endTagMatch = html.match(endTag);
+        if (endTagMatch) {
+          advance(endTagMatch[0].length);
+          end(endTagMatch[0]);
+          continue;
+        }
+      }
+      if (textEnd > 0) {
+        var text = html.substring(0, textEnd);
+        // console.log("9 text: ",text);
+        if (text) {
+          advance(text.length);
+          chars(text);
+        }
+      }
+    }
+    // console.log("10 html: ",html);
+    // console.log("10 root: ",root);
+    return root;
+  }
+
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+  function genProps(attrs) {
+    var str = '';
+    var _loop = function _loop() {
+      var attr = attrs[i];
+      if (attr.name == 'style') {
+        var obj = {};
+        // console.log(attr);
+        attr.value.split(';').forEach(function (item) {
+          var _item$split = item.split(':'),
+            _item$split2 = _slicedToArray(_item$split, 2),
+            key = _item$split2[0],
+            value = _item$split2[1];
+          obj[key] = value;
+        });
+        attr.value = obj;
+        // console.log(attr.value);
+      }
+
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    };
+    for (var i = 0; i < attrs.length; i++) {
+      _loop();
+    }
+    return "{".concat(str.slice(0, -1), "}");
+  }
+  function genchildren(children) {
+    return children.map(function (child) {
+      // console.log("genchildren(children): ",child);
+      var text = gen(child);
+      // console.log(text);
+      return text;
+    }).join(',');
+  }
+  function gen(node) {
+    // console.log(node.type);
+    if (node.type === 1) {
+      // console.log(`gen(node)${node.type}`,node);
+      var text = codegen(node);
+      // console.log("gen(node):",text);
+      return text;
+    } else {
+      var _text = node.text;
+      // console.log(text);
+      if (!defaultTagRE.test(_text)) {
+        // console.log(`_v(${text})`);
+        return "_v(".concat(_text, ")");
+      } else {
+        debugger;
+        var tokens = [];
+        var match;
+        defaultTagRE.lastIndex = 0;
+        var lastIndex = 0;
+        while (match = defaultTagRE.exec(_text)) {
+          console.log(match[0].length);
+          var index = match.index;
+          if (index > lastIndex) {
+            // console.log(text.slice(lastIndex, index));
+            tokens.push(JSON.stringify(_text.slice(lastIndex, index)));
+          }
+          // console.log(index,"**");
+          tokens.push("_s(".concat(match[1].trim(), ")"));
+          lastIndex = index + match[0].length;
+        }
+        if (lastIndex < _text.length) {
+          tokens.push(JSON.stringify(_text.slice(lastIndex)));
+        }
+        // console.log("tokens: ",tokens);
+        return "_v(".concat(tokens.join('+'), ")");
+      }
+    }
+  }
+  function codegen(ast) {
+    var children = genchildren(ast.children);
+    // console.log("children: ",ast.children);
+    var code = "_c('".concat(ast.tag, "',").concat(ast.attrs.length > 0 ? genProps(ast.attrs) : 'null', ",").concat(ast.children.length ? "".concat(children) : '', ")");
+    // console.log(code);
+    return code;
+  }
+  function compileToFunction(html) {
+    // debugger
+    // console.log("html: ",typeof html);
+    var ast = parseHTML(html);
+    // console.log("ast: ",ast);
+
+    var code = codegen(ast);
+    console.log("FINAL: ", code);
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
@@ -211,6 +468,31 @@
 
       // 初始状态
       initState(vm);
+      if (options.el) {
+        vm.$mount(options.el);
+      }
+    };
+    Vue.prototype.$mount = function (el) {
+      var vm = this;
+      el = document.querySelector(el);
+      var ops = vm.$options;
+      if (!ops.render) {
+        // 查找有无render
+        var template;
+        if (!ops.template && el) {
+          // 没写template用外部的template
+          template = el.outerHTML;
+        } else {
+          if (el) {
+            template = ops.template; // 写了template用自己的的template
+          }
+        }
+        // console.log(template);
+        if (template) {
+          var render = compileToFunction(template);
+          ops.render = render;
+        }
+      }
     };
   }
 

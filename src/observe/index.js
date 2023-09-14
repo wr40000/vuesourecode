@@ -2,10 +2,10 @@ import {newArrayproto} from './array'
 
 class Observe{
     constructor(data){
-        // Object.defineProperty智能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
+        // Object.defineProperty只能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
 
         // data.__ob__ = this //给data加上walk observeArray方法，array.js要使用以给新数据加上数据监测
-        // data.__proto__ = newArrayproto;会发生死循环，__ob__会被当做walk的key,defineReactive
+        // data.__ob__ = this;会发生死循环，__ob__会被当做walk的key,defineReactive
         // 中调用observe，再次return new Observe(data)，又加上data.__proto__ = newArrayproto;
         // 再次执行walk,陷入死循环，所以修改该属性为不可枚举即可解决
         Object.defineProperties(data,{

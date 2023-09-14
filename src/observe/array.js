@@ -15,7 +15,7 @@ let methods = [
 methods.forEach((method) => {
     newArrayproto[method] = function(...args){  // 重写数组的方法
         const result = oldArrayproto[method].call(this,...args);   // 内部调用原来的方法，函数劫持 切片编程
-        console.log(method);
+        // console.log(method);
 
         // 对对新增的数据再次观测
         let inserted;
@@ -29,7 +29,7 @@ methods.forEach((method) => {
                 inserted = args.slice(2);
                 break;
         }
-        console.log(inserted);
+        // console.log(inserted);
         if(inserted){
             ob.observeArray(inserted)
         }
