@@ -41,11 +41,11 @@ export function defineReactive(target, key, value) {
             get() {
                 //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
                 //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
-                console.log("用户取值了", value); 
+                // console.log("用户取值了", value); 
                 return value;
             },
             set(newValue) {
-                console.log("用户更改值了");
+                // console.log("用户更改值了");
                 if (value === newValue) return;
                 observe(newValue);  // 每一个新值也同样需要进行数据代理
                 value = newValue;

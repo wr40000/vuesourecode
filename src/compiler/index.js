@@ -41,13 +41,11 @@ function gen(node){
             // console.log(`_v(${text})`);
             return `_v(${text})`
         }else{
-            debugger
             let tokens = [];
             let match;
             defaultTagRE.lastIndex = 0
             let lastIndex = 0;
             while(match = defaultTagRE.exec(text)){
-                console.log(match[0].length);
                 let index = match.index;
                 if(index > lastIndex){
                     // console.log(text.slice(lastIndex, index));
@@ -74,11 +72,13 @@ function codegen(ast){
 };
 
 export function compileToFunction(html){
-    // debugger
-    // console.log("html: ",typeof html);
     let ast = parseHTML(html)
-    // console.log("ast: ",ast);
-
     let code = codegen(ast);
-    console.log("FINAL: ",code);
+    
+    // console.log(code);
+    code = `with(this){return ${code}}`;   //with作用是使代码可以访问传进来的this的属性
+    let render = new Function(code);    //根据代码生成render函数
+    // console.log(render);
+
+    return render;
 }

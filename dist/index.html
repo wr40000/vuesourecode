@@ -13,11 +13,11 @@
             <p>{{arr[2]}}</p>
         </span>
     </div> -->
-    <div id="app" style="color:red;background-color:yellow;">
-        <div style="color:red">
-{{arr[3].JNTM}}  Terraria {{arr[1]}}  Terraria
+    <div id="app" key="app" style="color:red;background-color:yellow;">
+        <div style="color:red" key="div">
+            {{arr[3].JNTM}}  Terraria {{arr[1]}}  Terraria
         </div>
-        <span>{{arr[2]}}</span>
+        <span key="span">{{tool['铁皮药剂']}}</span>
     </div>
     <script src="vue.js"></script>
     <script>
@@ -38,6 +38,15 @@
             // template: '<div>蔡徐坤</div>'
         })
         vm.$mount('#app')
+
+        // 下一步: 属性和我们的视图关联起来，做到数据变化可以自动更新视图(观察者模式)
+
+        // 现在还需要在数据变化后手动调用vm_updata 和 vm._render方法
+        setInterval(()=>{
+            vm.tool['铁皮药剂']++;
+            vm._updata(vm._render())
+        },500)
+
     </script>
 </body>
 </html>

@@ -196,11 +196,11 @@
       get: function get() {
         //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
         //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
-        console.log("用户取值了", value);
+        // console.log("用户取值了", value); 
         return value;
       },
       set: function set(newValue) {
-        console.log("用户更改值了");
+        // console.log("用户更改值了");
         if (value === newValue) return;
         observe(newValue); // 每一个新值也同样需要进行数据代理
         value = newValue;
@@ -420,13 +420,11 @@
         // console.log(`_v(${text})`);
         return "_v(".concat(_text, ")");
       } else {
-        debugger;
         var tokens = [];
         var match;
         defaultTagRE.lastIndex = 0;
         var lastIndex = 0;
         while (match = defaultTagRE.exec(_text)) {
-          console.log(match[0].length);
           var index = match.index;
           if (index > lastIndex) {
             // console.log(text.slice(lastIndex, index));
@@ -452,14 +450,164 @@
     return code;
   }
   function compileToFunction(html) {
-    // debugger
-    // console.log("html: ",typeof html);
     var ast = parseHTML(html);
-    // console.log("ast: ",ast);
-
     var code = codegen(ast);
-    console.log("FINAL: ", code);
+
+    // console.log(code);
+    code = "with(this){return ".concat(code, "}"); //with作用是使代码可以访问传进来的this的属性
+    var render = new Function(code); //根据代码生成render函数
+    // console.log(render);
+
+    return render;
   }
+
+  // h()  _c()
+  function createElementVNode(vm, tag, data) {
+    // console.log(vm);
+    // console.log("tag: ",tag);
+    // console.log("data: ",data);
+    // console.log("...children: ",...children);
+    if (data == null) {
+      data = {};
+    }
+    var key = data.key;
+    // console.log("data: ",data);
+    // console.log("key: ",key);
+    if (key) {
+      delete data.key;
+    }
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
+    }
+    return vnode(vm, tag, key, data, children);
+  }
+
+  //  _v()
+  function createTextVNode(vm, text) {
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  }
+
+  // ast一样吗？ ast做的是语法层面的转化，他描述的是语法本身(html,css,js)，我们的虚拟DOM是
+  // 描述的DOM元素，可以增加一些自定义的属性
+  function vnode(vm, tag, key, data, children, text) {
+    return {
+      vm: vm,
+      tag: tag,
+      key: key,
+      data: data,
+      children: children,
+      text: text
+    };
+  }
+
+  function createElm(vnode) {
+    //              (标签名 key)
+    //          vnode(div app)
+    //              /           \
+    //    vonde(div div)         vnode(span span)
+    var tag = vnode.tag,
+      data = vnode.data,
+      children = vnode.children,
+      text = vnode.text;
+    if (typeof tag === 'string') {
+      //标签
+      vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性
+      patchProps(vnode.el, data);
+      children.forEach(function (child) {
+        // console.log(vnode);
+        vnode.el.appendChild(createElm(child)); //递归，不断地向vnode.el里添加html元素
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+    return vnode.el;
+  }
+  function patchProps(el, props) {
+    for (var key in props) {
+      if (key === 'style') {
+        for (var styleName in props.style) {
+          el.style[styleName] = props.style[styleName];
+        }
+      } else {
+        el.setAttribute(key, props[key]);
+      }
+    }
+  }
+  function patch(oldVNode, vnode) {
+    // 写的是初渲染流程
+    var isRealELement = oldVNode.nodeType;
+    if (isRealELement) {
+      var elm = oldVNode;
+      var parentElm = elm.parentNode;
+      // console.log(parentElm, vnode);
+      var newElm = createElm(vnode);
+      parentElm.insertBefore(newElm, elm.nextSibling);
+      parentElm.removeChild(elm);
+      return newElm;
+    }
+  }
+  function initLifeCycle(Vue) {
+    Vue.prototype._updata = function (vnode) {
+      var vm = this;
+      var el = vm.$el;
+      var elm = patch(el, vnode);
+      vm.$el = elm;
+    };
+
+    // _c(
+    //     'div',
+    //     {id:"app",style:{"color":"red","background-color":"yellow"}},
+    //     _c(
+    //         'div',
+    //         {style:{"color":"red"}},
+    //         _v(
+    //             _s(arr[3].JNTM)+"Terraria"+_s(arr[1])+"Terraria"
+    //         )
+    //     ),
+    //     _c('span',null,_v(_s(arr[2])))
+    // )
+
+    // 根据_c _v _s生成的vnode是不一样的，tag(标签名)是不一样的，可以根据这个区分
+    // _c('div', {}, ...children)
+    Vue.prototype._c = function () {
+      return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    // _v(text)
+    Vue.prototype._v = function () {
+      return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    };
+    Vue.prototype._s = function (value) {
+      if (typeof value !== 'Object') return value;
+      return JSON.stringify(value);
+    };
+    Vue.prototype._render = function () {
+      var vm = this;
+      // 让with中的this 指向 vm
+      // 当渲染的时候会去实例上取值，我们就可以将属性和视图绑定在一起
+      return vm.$options.render.call(vm); // 通过ast语法转义后的render方法
+    };
+  }
+
+  function mountComponent(vm, el) {
+    vm.$el = el;
+
+    // 1.调用render方法生成虚拟dom
+    // vm._render();   //vm.$options.render() 虚拟节点
+    vm._updata(vm._render()); //虚拟节点扩展为真实节点
+
+    // 2.根据虚拟dom生成真实dom
+
+    // 3.插入到el元素中
+  }
+
+  // Vue核心流程
+  // 1> 创造响应式数据
+  // 1> 模板解析为ast语法树
+  // 1> 将ast语法树转换为render函数，因为使用正则匹配，性能损耗比较大，所以转换为render函数
+  // 1> 后续数据更新只需要重新执行render函数，无需再次执行ast转化
+
+  // render函数会产生虚拟节点(使用响应式数据)
+  // 根据生成的虚拟节点创造真实的DOM
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
@@ -473,6 +621,7 @@
       }
     };
     Vue.prototype.$mount = function (el) {
+      // debugger
       var vm = this;
       el = document.querySelector(el);
       var ops = vm.$options;
@@ -493,6 +642,7 @@
           ops.render = render;
         }
       }
+      mountComponent(vm, el); //组件的挂载
     };
   }
 
@@ -500,6 +650,7 @@
     this._init(options);
   }
   initMixin(Vue);
+  initLifeCycle(Vue);
 
   return Vue;
 
