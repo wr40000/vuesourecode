@@ -10,6 +10,7 @@ export function createElementVNode(vm,tag, data, ...children){
     let key = data.key;
     // console.log("data: ",data);
     // console.log("key: ",key);
+    // console.log(data);
     if(key){
         delete data.key
     }

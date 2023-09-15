@@ -1,4 +1,5 @@
 import {createElementVNode, createTextVNode} from './vdom'
+import {Watcher} from './observe/watcher'
 
 function createElm(vnode){
     //              (标签名 key)
@@ -60,19 +61,19 @@ export function initLifeCycle(Vue){
     //         'div',
     //         {style:{"color":"red"}},
     //         _v(
-    //             _s(arr[3].JNTM)+"Terraria"+_s(arr[1])+"Terraria"
+    //             _s(arr[3].JNTM)+"Terraria"+_s(arr[1])+"Terraria" //似乎会将_s的结果拼串
     //         )
     //     ),
     //     _c('span',null,_v(_s(arr[2])))
     // )
     
     // 根据_c _v _s生成的vnode是不一样的，tag(标签名)是不一样的，可以根据这个区分
-    // _c('div', {}, ...children)
+    // _c('div', {}, ...children)  ...arguments是 'div', {}, ...children
     Vue.prototype._c = function(){       
         return createElementVNode(this, ...arguments)
     }
     // _v(text)
-    Vue.prototype._v = function(){        
+    Vue.prototype._v = function(){      
         return createTextVNode(this, ...arguments)
     }
     Vue.prototype._s = function(value){      
@@ -92,7 +93,11 @@ export function mountComponent(vm, el){
 
     // 1.调用render方法生成虚拟dom
     // vm._render();   //vm.$options.render() 虚拟节点
-    vm._updata(vm._render());   //虚拟节点扩展为真实节点
+    const updataComponent = () => {
+        vm._updata(vm._render());   //虚拟节点扩展为真实节点
+    }
+    const watcher = new Watcher(vm, updataComponent, true)
+    // console.log(watcher);
     
     // 2.根据虚拟dom生成真实dom
 

@@ -15,9 +15,11 @@
     </div> -->
     <div id="app" key="app" style="color:red;background-color:yellow;">
         <div style="color:red" key="div">
-            {{arr[3].JNTM}}  Terraria {{arr[1]}}  Terraria
+            {{arr[3].JNTM}}  Terraria {{arr[3].JNTM}}  Terraria
         </div>
-        <span key="span">{{tool['铁皮药剂']}}</span>
+        <span key="span">
+            {{tool['铁皮药剂']}}
+        </span>
     </div>
     <script src="vue.js"></script>
     <script>
@@ -44,7 +46,6 @@
         // 现在还需要在数据变化后手动调用vm_updata 和 vm._render方法
         setInterval(()=>{
             vm.tool['铁皮药剂']++;
-            vm._updata(vm._render())
         },500)
 
     </script>

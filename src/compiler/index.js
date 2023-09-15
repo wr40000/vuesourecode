@@ -2,12 +2,12 @@ import {parseHTML} from './parse'
 var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
 
 function genProps(attrs){
+    // console.log(attrs);
     let str = '';
     for(let i = 0; i<attrs.length; i++){
         let attr = attrs[i];
         if(attr.name == 'style'){
             let obj = {};
-            // console.log(attr);
             attr.value.split(';').forEach((item)=>{
                 let [key, value] = item.split(':');
                 obj[key] = value
@@ -78,7 +78,6 @@ export function compileToFunction(html){
     // console.log(code);
     code = `with(this){return ${code}}`;   //with作用是使代码可以访问传进来的this的属性
     let render = new Function(code);    //根据代码生成render函数
-    // console.log(render);
 
     return render;
 }

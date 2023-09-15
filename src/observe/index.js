@@ -1,4 +1,5 @@
 import {newArrayproto} from './array'
+import {Dep} from './dep'
 
 class Observe{
     constructor(data){
@@ -36,9 +37,14 @@ class Observe{
 
 export function defineReactive(target, key, value) {
     observe(value);
+    let dep = new Dep();
+    // console.log(dep,key);
     Object.defineProperties(target, {
         [key]: {
             get() {
+                if(Dep.target){
+                    dep.depend();//让这个属性收集器记住当前的watch
+                }
                 //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
                 //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
                 // console.log("用户取值了", value); 
@@ -49,6 +55,7 @@ export function defineReactive(target, key, value) {
                 if (value === newValue) return;
                 observe(newValue);  // 每一个新值也同样需要进行数据代理
                 value = newValue;
+                dep.notify()
             }
         }
     });

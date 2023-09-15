@@ -149,6 +149,38 @@
     };
   });
 
+  var id$1 = 0;
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.id = id$1++;
+      this.subs = [];
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        // 不希望放重复的watcher 而且刚才只是一个单向的关系  dep => Watcher
+        // this.subs.push(Dep.target);
+
+        Dep.target.addDep(this); //让watcher记住dep  双向
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.updata();
+        });
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null;
+
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
@@ -192,8 +224,13 @@
   }();
   function defineReactive(target, key, value) {
     observe(value);
+    var dep = new Dep();
+    // console.log(dep,key);
     Object.defineProperties(target, _defineProperty({}, key, {
       get: function get() {
+        if (Dep.target) {
+          dep.depend(); //让这个属性收集器记住当前的watch
+        }
         //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
         //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
         // console.log("用户取值了", value); 
@@ -204,6 +241,7 @@
         if (value === newValue) return;
         observe(newValue); // 每一个新值也同样需要进行数据代理
         value = newValue;
+        dep.notify();
       }
     }));
   }
@@ -374,12 +412,12 @@
 
   var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
   function genProps(attrs) {
+    // console.log(attrs);
     var str = '';
     var _loop = function _loop() {
       var attr = attrs[i];
       if (attr.name == 'style') {
         var obj = {};
-        // console.log(attr);
         attr.value.split(';').forEach(function (item) {
           var _item$split = item.split(':'),
             _item$split2 = _slicedToArray(_item$split, 2),
@@ -456,7 +494,6 @@
     // console.log(code);
     code = "with(this){return ".concat(code, "}"); //with作用是使代码可以访问传进来的this的属性
     var render = new Function(code); //根据代码生成render函数
-    // console.log(render);
 
     return render;
   }
@@ -473,6 +510,7 @@
     var key = data.key;
     // console.log("data: ",data);
     // console.log("key: ",key);
+    // console.log(data);
     if (key) {
       delete data.key;
     }
@@ -499,6 +537,46 @@
       text: text
     };
   }
+
+  var id = 0;
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, fn, options) {
+      _classCallCheck(this, Watcher);
+      this.id = id++;
+      this.render = options; //表示是一个渲染函数
+      this.deps = []; //后续实现计算属性和一些清理工作需要用到
+      this.depsId = new Set();
+      this.getter = fn;
+      this.get(); //意味着这个函数发生取值操作
+    }
+    _createClass(Watcher, [{
+      key: "get",
+      value: function get() {
+        // this:更新函数所在的那个watcher  类中的this都是实例 这里的this=> Watcher
+        Dep.target = this; //静态属性就是只有一份  
+        this.getter(); //回去vm上取值
+        Dep.target = null;
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        //一个事件对应着多个属性 重复的属性也不用记录
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this); //watcher已经记住了dep,此时让dep也记住watcher
+        }
+      }
+    }, {
+      key: "updata",
+      value: function updata() {
+        this.get(); //重新更新
+      }
+    }]);
+    return Watcher;
+  }();
+  // 给每个属性增加一个dep
 
   function createElm(vnode) {
     //              (标签名 key)
@@ -561,14 +639,14 @@
     //         'div',
     //         {style:{"color":"red"}},
     //         _v(
-    //             _s(arr[3].JNTM)+"Terraria"+_s(arr[1])+"Terraria"
+    //             _s(arr[3].JNTM)+"Terraria"+_s(arr[1])+"Terraria" //似乎会将_s的结果拼串
     //         )
     //     ),
     //     _c('span',null,_v(_s(arr[2])))
     // )
 
     // 根据_c _v _s生成的vnode是不一样的，tag(标签名)是不一样的，可以根据这个区分
-    // _c('div', {}, ...children)
+    // _c('div', {}, ...children)  ...arguments是 'div', {}, ...children
     Vue.prototype._c = function () {
       return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
     };
@@ -593,7 +671,12 @@
 
     // 1.调用render方法生成虚拟dom
     // vm._render();   //vm.$options.render() 虚拟节点
-    vm._updata(vm._render()); //虚拟节点扩展为真实节点
+    var updataComponent = function updataComponent() {
+      vm._updata(vm._render()); //虚拟节点扩展为真实节点
+    };
+
+    new Watcher(vm, updataComponent, true);
+    // console.log(watcher);
 
     // 2.根据虚拟dom生成真实dom
 
