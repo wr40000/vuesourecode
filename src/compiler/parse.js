@@ -86,6 +86,7 @@ export function parseHTML(html){
             advance(start[0].length);
             // console.log("2 html: ",html);
             let attr,end;
+            // 如果不是开始标签就一直匹配下去
             while(!(end = html.match(startTagClose)) && (attr = html.match(attribute))){
                 advance(attr[0].length);
                 // console.log("3 attr: ",attr);

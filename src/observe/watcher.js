@@ -2,6 +2,7 @@ import { Dep } from "./dep";
 
 let id = 0;
 
+// 给每个属性增加一个dep
 export class Watcher{
     constructor(vm, fn, options){
         this.id = id++;
@@ -27,7 +28,77 @@ export class Watcher{
         }
     }
     updata(){
-        this.get()  //重新更新
+        // this.get()  //重新更新
+        queueWatcher(this)
+    };
+    run(){
+        this.get()
     }
 }
-// 给每个属性增加一个dep
+let queue = [];
+let has = [];
+let pending = false;    //防抖
+function flushSchedulerQueue(){
+    let flusherQueue = queue.slice(0);
+    has = [];
+    queue = [];
+    pending = false;
+    flusherQueue.forEach((q)=>{
+        q.run()})
+}
+function queueWatcher(watcher){
+    const id = watcher.id;
+    if(!has[id]){
+        queue.push(watcher);
+        has[id] = true;
+        if(!pending){
+            // setTimeout(flushSchedulerQueue,0)
+            nextTick(flushSchedulerQueue, 0)
+            pending = true
+        }
+    }
+}
+
+let callbacks = [];
+let waiting = false;
+function flushCallbacks(){
+    let cbs = callbacks.slice(0);
+    waiting = false;
+    callbacks = [];
+    cbs.forEach((cb)=>cb())
+}
+// nextTick没有直接使用某个api，而是采用优雅降级的方式
+// 内部先采用的是Promise,MutationObserver(h5的api), 
+let timeFunc;
+if(Promise){
+    timeFunc = ()=>{
+        Promise.resolve().then(flushCallbacks)
+    }
+}else if(MutationObserver){
+    let observer = new MutationObserver(flushCallbacks) //这里传入的回调是异步执行的
+    let textNode = document.createTextNode(1);
+    observer.observe(textNode,{
+        characterData: true
+    });
+    timeFunc = () => {
+        textNode.textContent = 2;
+    }
+}else if(setImmediate){
+    timeFunc = ()=>{
+        setImmediate(flushCallbacks);
+    }
+}else{
+    timeFunc = () => {
+        setTimeout(flushCallbacks)
+    }
+}
+export function nextTick(cb){
+    callbacks.push(cb); //维护nextTick中的callback方法
+    if(!waiting){
+        // setTimeout(()=>{
+        //     flushCallbacks();
+        // }, 0)
+        timeFunc();
+        waiting = true;
+    }
+}

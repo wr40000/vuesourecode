@@ -153,8 +153,8 @@
   var Dep = /*#__PURE__*/function () {
     function Dep() {
       _classCallCheck(this, Dep);
-      this.id = id$1++;
-      this.subs = [];
+      this.id = id$1++; // 属性的dep要收集watcher
+      this.subs = []; //这里存放着当前属性对应的wetcher有哪些
     }
     _createClass(Dep, [{
       key: "depend",
@@ -163,6 +163,8 @@
         // this.subs.push(Dep.target);
 
         Dep.target.addDep(this); //让watcher记住dep  双向
+        // watcher和Dep是一个多对多的关系(一个属性可以再多个组件中使用dep -> 多个watcher)
+        // 一个组件中由多个属性组成(一个watcher对应多个dep)
       }
     }, {
       key: "addSub",
@@ -357,6 +359,7 @@
         advance(start[0].length);
         // console.log("2 html: ",html);
         var attr, _end;
+        // 如果不是开始标签就一直匹配下去
         while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
           advance(attr[0].length);
           // console.log("3 attr: ",attr);
@@ -539,6 +542,8 @@
   }
 
   var id = 0;
+
+  // 给每个属性增加一个dep
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, fn, options) {
       _classCallCheck(this, Watcher);
@@ -571,12 +576,86 @@
     }, {
       key: "updata",
       value: function updata() {
-        this.get(); //重新更新
+        // this.get()  //重新更新
+        queueWatcher(this);
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get();
       }
     }]);
     return Watcher;
   }();
-  // 给每个属性增加一个dep
+  var queue = [];
+  var has = [];
+  var pending = false; //防抖
+  function flushSchedulerQueue() {
+    var flusherQueue = queue.slice(0);
+    has = [];
+    queue = [];
+    pending = false;
+    flusherQueue.forEach(function (q) {
+      q.run();
+    });
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true;
+      if (!pending) {
+        // setTimeout(flushSchedulerQueue,0)
+        nextTick(flushSchedulerQueue);
+        pending = true;
+      }
+    }
+  }
+  var callbacks = [];
+  var waiting = false;
+  function flushCallbacks() {
+    var cbs = callbacks.slice(0);
+    waiting = false;
+    callbacks = [];
+    cbs.forEach(function (cb) {
+      return cb();
+    });
+  }
+  // nextTick没有直接使用某个api，而是采用优雅降级的方式
+  // 内部先采用的是Promise,MutationObserver(h5的api), 
+  var timeFunc;
+  if (Promise) {
+    timeFunc = function timeFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallbacks); //这里传入的回调是异步执行的
+    var textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+      characterData: true
+    });
+    timeFunc = function timeFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timeFunc = function timeFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timeFunc = function timeFunc() {
+      setTimeout(flushCallbacks);
+    };
+  }
+  function nextTick(cb) {
+    callbacks.push(cb); //维护nextTick中的callback方法
+    if (!waiting) {
+      // setTimeout(()=>{
+      //     flushCallbacks();
+      // }, 0)
+      timeFunc();
+      waiting = true;
+    }
+  }
 
   function createElm(vnode) {
     //              (标签名 key)
@@ -732,6 +811,7 @@
   function Vue(options) {
     this._init(options);
   }
+  Vue.prototype.$nextTick = nextTick;
   initMixin(Vue);
   initLifeCycle(Vue);
 

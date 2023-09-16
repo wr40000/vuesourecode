@@ -13,6 +13,10 @@
             <p>{{arr[2]}}</p>
         </span>
     </div> -->
+    <!-- 我们可以给模板里的属性增加以一个收集器dep -->
+    <!-- 页面渲染的时候 我们将渲染逻辑封装到watcher中  vm._updata(vm._render()) -->
+    <!-- 让dep记住这个wetcher即可，稍后属性表变化了可以找到对应的dep中的存放的wetcher进行 -->
+    <!-- 重新渲染 -->
     <div id="app" key="app" style="color:red;background-color:yellow;">
         <div style="color:red" key="div">
             {{arr[3].JNTM}}  Terraria {{arr[3].JNTM}}  Terraria
@@ -22,6 +26,7 @@
         </span>
     </div>
     <script src="vue.js"></script>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
     <script>
         // 数据监控
         const vm = new Vue({
@@ -44,9 +49,24 @@
         // 下一步: 属性和我们的视图关联起来，做到数据变化可以自动更新视图(观察者模式)
 
         // 现在还需要在数据变化后手动调用vm_updata 和 vm._render方法
-        setInterval(()=>{
-            vm.tool['铁皮药剂']++;
-        },500)
+        // setTimeout(()=>{
+        //     vm.tool['铁皮药剂']++;
+        //     vm.tool['铁皮药剂']++;
+        //     vm.tool['铁皮药剂']++;
+        //     vm.tool['铁皮药剂']++;
+        //     vm.tool['铁皮药剂']++;
+        //     vm.tool['铁皮药剂']++;
+        // },500)
+
+        // nextTick不是创建了异步任务，而是将这个任务维护到了队列中而已
+        console.log(vm.tool['铁皮药剂']);
+        vm.$nextTick(()=>{
+            new Promise(resolve => {resolve()}).then(()=>{
+                vm.tool['铁皮药剂']++;
+            })
+            console.log("nextTick",vm.tool['铁皮药剂']);
+        })
+        console.log("nextTick",vm.tool['铁皮药剂']);
 
     </script>
 </body>
