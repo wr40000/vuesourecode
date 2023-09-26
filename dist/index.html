@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
     <!-- <div id="app" style="color:skyblue;font-size: 15px;font-weight: 50;">
         {{arr[0]}}
@@ -19,7 +21,7 @@
     <!-- 重新渲染 -->
     <div id="app" key="app" style="color:red;background-color:yellow;">
         <div style="color:red" key="div">
-            {{arr[3].JNTM}}  Terraria {{arr[3].JNTM}}  Terraria
+            {{arr[3].JNTM}} Terraria {{arr[3].JNTM}} Terraria
         </div>
         <span key="span">
             {{tool['铁皮药剂']}}{{name}}
@@ -29,20 +31,35 @@
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
     <script>
         // 数据监控
+        // mixin
+        Vue.mixin({
+            created() {
+                console.log("mixin1");
+            },
+            a: 1
+        })
+        Vue.mixin({
+            created() {
+                console.log("mixin2");
+            }
+        })
         const vm = new Vue({
-            data(){
+            data() {
                 return {
                     name: "随风",
                     work: "盗贼",
-                    tool:{
+                    tool: {
                         "超亮火把": 689,
                         "铁皮药剂": 30
                     },
-                    arr:["FSX", "TONE", "DEAD", {"JNTM": "XHZ"}]
+                    arr: ["FSX", "TONE", "DEAD", { "JNTM": "XHZ" }]
                 }
             },
             // el: "#app",
             // template: '<div>蔡徐坤</div>'
+            created() {
+                console.log("mixin--self");
+            },
         })
         vm.$mount('#app')
 
@@ -61,20 +78,25 @@
         // vm.name = "5555"
         // console.log(app.innerHTML);     //打印的name并不是5555
         // setTimeout(()=>{
-            //     console.log(app.innerHTML);     //放到定时器里就可以打印name是5555 
-            // },0)
-            // Promise.resolve().then(()=>{
-                //         console.log(app.innerHTML); //同步获取 打印name是5555
-                // })
-                
-                
-                
+        //     console.log(app.innerHTML);     //放到定时器里就可以打印name是5555 
+        // },0)
+        // Promise.resolve().then(()=>{
+        //         console.log(app.innerHTML); //同步获取 打印name是5555
+        // })
+
+
+
         // nextTick不是创建了异步任务，而是将这个任务维护到了队列中而已
-        vm.name = "5555"
-        vm.$nextTick(()=>{
-            console.log(app.innerHTML);
-        })
+        // vm.name = "5555"
+        // vm.$nextTick(()=>{
+        //     console.log(app.innerHTML);
+        // })
+
+        // mixin
+        console.log(vm.$options);
+
 
     </script>
 </body>
+
 </html>

@@ -773,13 +773,65 @@
   // render函数会产生虚拟节点(使用响应式数据)
   // 根据生成的虚拟节点创造真实的DOM
 
+  function callHook(vm, hook) {
+    // 调用钩子函数
+    var handlers = vm.$options[hook];
+    if (handlers) {
+      handlers.forEach(function (handler) {
+        handler.call(vm);
+      });
+    }
+  }
+
+  // 静态方法
+  var strats = {};
+  var LIFECYCLE = ["beforeCreate", "created"];
+  LIFECYCLE.forEach(function (hook) {
+    strats[hook] = function (p, c) {
+      if (c) {
+        if (p) {
+          return p.concat(c);
+        } else {
+          return [c]; //儿子有父亲没有
+        }
+      } else {
+        return p; //如果儿子没有则用父亲即可
+      }
+    };
+  });
+
+  function mergeOptions(parent, child) {
+    var options = {};
+    for (var key in parent) {
+      mergeField(key);
+    }
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+    function mergeField(key) {
+      // 策略模式，目的是减少if / else
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+      } else {
+        // 如果不在策略中
+        options[key] = child[key] || parent[key]; // 优先采用儿子
+      }
+    }
+
+    return options;
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      vm.$options = options; // 用户数据挂载到实例上
-
+      // 用户数据挂载到实例上  并合并
+      vm.$options = mergeOptions(this.constructor.options, options);
+      callHook(vm, 'beforeCreate');
       // 初始状态
       initState(vm);
+      callHook(vm, 'created');
       if (options.el) {
         vm.$mount(options.el);
       }
@@ -810,12 +862,22 @@
     };
   }
 
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+    Vue.mixin = function (mixin) {
+      // 我们希望将用户的选项和全局的options进行合并
+      this.options = mergeOptions(this.options, mixin);
+      return this;
+    };
+  }
+
   function Vue(options) {
     this._init(options);
   }
   Vue.prototype.$nextTick = nextTick;
-  initMixin(Vue);
+  initMixin(Vue); //扩展了init方法
   initLifeCycle(Vue);
+  initGlobalAPI(Vue);
 
   return Vue;
 
