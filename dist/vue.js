@@ -577,22 +577,23 @@
       key: "updata",
       value: function updata() {
         // this.get()  //重新更新
-        queueWatcher(this);
+        queueWatcher(this); //把当前watcher存起来  放到一个队列里
       }
     }, {
       key: "run",
       value: function run() {
+        console.log("run");
         this.get();
       }
     }]);
     return Watcher;
   }();
   var queue = [];
-  var has = [];
+  var has = {};
   var pending = false; //防抖
   function flushSchedulerQueue() {
     var flusherQueue = queue.slice(0);
-    has = [];
+    has = {};
     queue = [];
     pending = false;
     flusherQueue.forEach(function (q) {
@@ -602,6 +603,7 @@
   function queueWatcher(watcher) {
     var id = watcher.id;
     if (!has[id]) {
+      //一个watcher不重复刷新
       queue.push(watcher);
       has[id] = true;
       if (!pending) {
@@ -623,7 +625,7 @@
   }
   // nextTick没有直接使用某个api，而是采用优雅降级的方式
   // 内部先采用的是Promise,MutationObserver(h5的api), 
-  var timeFunc;
+  var timeFunc; //初始化文件时确定了该函数
   if (Promise) {
     timeFunc = function timeFunc() {
       Promise.resolve().then(flushCallbacks);

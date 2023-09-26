@@ -22,7 +22,7 @@
             {{arr[3].JNTM}}  Terraria {{arr[3].JNTM}}  Terraria
         </div>
         <span key="span">
-            {{tool['铁皮药剂']}}
+            {{tool['铁皮药剂']}}{{name}}
         </span>
     </div>
     <script src="vue.js"></script>
@@ -58,15 +58,22 @@
         //     vm.tool['铁皮药剂']++;
         // },500)
 
+        // vm.name = "5555"
+        // console.log(app.innerHTML);     //打印的name并不是5555
+        // setTimeout(()=>{
+            //     console.log(app.innerHTML);     //放到定时器里就可以打印name是5555 
+            // },0)
+            // Promise.resolve().then(()=>{
+                //         console.log(app.innerHTML); //同步获取 打印name是5555
+                // })
+                
+                
+                
         // nextTick不是创建了异步任务，而是将这个任务维护到了队列中而已
-        console.log(vm.tool['铁皮药剂']);
+        vm.name = "5555"
         vm.$nextTick(()=>{
-            new Promise(resolve => {resolve()}).then(()=>{
-                vm.tool['铁皮药剂']++;
-            })
-            console.log("nextTick",vm.tool['铁皮药剂']);
+            console.log(app.innerHTML);
         })
-        console.log("nextTick",vm.tool['铁皮药剂']);
 
     </script>
 </body>
