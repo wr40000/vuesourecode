@@ -3,6 +3,7 @@ import {Dep} from './dep'
 
 class Observe{
     constructor(data){
+        this.dep = new Dep();//所有对象也增加dep
         // Object.defineProperty只能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
 
         // data.__ob__ = this //给data加上walk observeArray方法，array.js要使用以给新数据加上数据监测
@@ -34,9 +35,17 @@ class Observe{
         data.forEach(item => observe(item))
     }
 }
-
+function dependArray(value){
+    for(let i = 0;i<value.length; i++){
+        let current = value[i];
+        current.__ob__ && current.__ob__.dep.depend();
+        if(Array.isArray(current)){
+            dependArray(current)
+        }
+    }
+}
 export function defineReactive(target, key, value) {
-    observe(value);
+    let childDep = observe(value);    
     let dep = new Dep();
     // console.log(dep,key);
     Object.defineProperties(target, {
@@ -44,6 +53,12 @@ export function defineReactive(target, key, value) {
             get() {
                 if(Dep.target){
                     dep.depend();//让这个属性收集器记住当前的watch
+                    if(childDep){
+                        childDep.dep.depend();//让对象和数组本身也依赖收集
+                        if(Array.isArray(value)){
+                            dependArray(value)
+                        }
+                    }
                 }
                 //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
                 //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况

@@ -15,6 +15,7 @@ LIFECYCLE.forEach((hook) => {
   };
 });
 export function mergeOptions(parent, child) {
+  // console.log("parent: ",parent);
   const options = {};
 
   for (let key in parent) {

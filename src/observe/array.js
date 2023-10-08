@@ -33,6 +33,7 @@ methods.forEach((method) => {
         if(inserted){
             ob.observeArray(inserted)
         }
+        ob.dep.notify();//让对象和数组本身也响应
         return result;
     }
 })

@@ -115,6 +115,7 @@ export function mountComponent(vm, el){
 
 export function callHook(vm, hook){ // 调用钩子函数
     const handlers = vm.$options[hook];
+    // console.log("handlers: ",handlers);
     if(handlers){
         handlers.forEach((handler)=>{
             handler.call(vm)

@@ -32,7 +32,7 @@ export class Watcher{
         queueWatcher(this)  //把当前watcher存起来  放到一个队列里
     };
     run(){
-        console.log("run");
+        // console.log("run");
         this.get()
     }
 }

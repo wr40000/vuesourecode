@@ -21,28 +21,26 @@
     <!-- 重新渲染 -->
     <div id="app" key="app" style="color:red;background-color:yellow;">
         <div style="color:red" key="div">
-            {{arr[3].JNTM}} Terraria {{arr[3].JNTM}} Terraria
+            {{arr}}
         </div>
-        <span key="span">
-            {{tool['铁皮药剂']}}{{name}}
-        </span>
+        <div>{{a}}</div>
     </div>
     <script src="vue.js"></script>
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
     <script>
         // 数据监控
         // mixin
-        Vue.mixin({
-            created() {
-                console.log("mixin1");
-            },
-            a: 1
-        })
-        Vue.mixin({
-            created() {
-                console.log("mixin2");
-            }
-        })
+        // Vue.mixin({
+        //     created() {
+        //         console.log("mixin1");
+        //     },
+        //     a: 1
+        // })
+        // Vue.mixin({
+        //     created() {
+        //         console.log("mixin2");
+        //     }
+        // })
         const vm = new Vue({
             data() {
                 return {
@@ -52,13 +50,14 @@
                         "超亮火把": 689,
                         "铁皮药剂": 30
                     },
-                    arr: ["FSX", "TONE", "DEAD", { "JNTM": "XHZ" }]
+                    arr: ["FSX", "TONE", "DEAD", { "JNTM": "XHZ" },[1,2]],
+                    a:{a:100}
                 }
             },
             // el: "#app",
             // template: '<div>蔡徐坤</div>'
             created() {
-                console.log("mixin--self");
+                // console.log("created--self");
             },
         })
         vm.$mount('#app')
@@ -89,13 +88,20 @@
         // nextTick不是创建了异步任务，而是将这个任务维护到了队列中而已
         // vm.name = "5555"
         // vm.$nextTick(()=>{
-        //     console.log(app.innerHTML);
+        //     console.log("app.innerHTML: ",app.innerHTML);
         // })
 
         // mixin
-        console.log(vm.$options);
+        // console.log(vm.$options);
 
+        // 数组更新实现原理
+        // vm.arr.push(100)
+        vm.arr[4].push(100)
 
+        setTimeout(()=>{
+            vm.a.b = 100;
+            vm.a.__ob__.dep.notify();   //$set原理
+        },500)
     </script>
 </body>
 

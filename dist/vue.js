@@ -145,6 +145,7 @@
       if (inserted) {
         ob.observeArray(inserted);
       }
+      ob.dep.notify(); //让对象和数组本身也响应
       return result;
     };
   });
@@ -186,6 +187,7 @@
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
+      this.dep = new Dep(); //所有对象也增加dep
       // Object.defineProperty只能劫持已经存在的属性，vue2的$set就是为后加的属性添加响应式
 
       // data.__ob__ = this //给data加上walk observeArray方法，array.js要使用以给新数据加上数据监测
@@ -224,14 +226,29 @@
     }]);
     return Observe;
   }();
+  function dependArray(value) {
+    for (var i = 0; i < value.length; i++) {
+      var current = value[i];
+      current.__ob__ && current.__ob__.dep.depend();
+      if (Array.isArray(current)) {
+        dependArray(current);
+      }
+    }
+  }
   function defineReactive(target, key, value) {
-    observe(value);
+    var childDep = observe(value);
     var dep = new Dep();
     // console.log(dep,key);
     Object.defineProperties(target, _defineProperty({}, key, {
       get: function get() {
         if (Dep.target) {
           dep.depend(); //让这个属性收集器记住当前的watch
+          if (childDep) {
+            childDep.dep.depend(); //让对象和数组本身也依赖收集
+            if (Array.isArray(value)) {
+              dependArray(value);
+            }
+          }
         }
         //修改数组元素为基本数据类型时之所以会有这个log，应该是外层的数据的get,
         //不会出现打印console.log("用户取值了", value); 的value为数组元素为基本数据类型的情况
@@ -582,7 +599,7 @@
     }, {
       key: "run",
       value: function run() {
-        console.log("run");
+        // console.log("run");
         this.get();
       }
     }]);
@@ -776,6 +793,7 @@
   function callHook(vm, hook) {
     // 调用钩子函数
     var handlers = vm.$options[hook];
+    // console.log("handlers: ",handlers);
     if (handlers) {
       handlers.forEach(function (handler) {
         handler.call(vm);
@@ -801,6 +819,7 @@
   });
 
   function mergeOptions(parent, child) {
+    // console.log("parent: ",parent);
     var options = {};
     for (var key in parent) {
       mergeField(key);
