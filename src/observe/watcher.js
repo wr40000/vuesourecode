@@ -1,23 +1,49 @@
-import { Dep } from "./dep";
+import { Dep, pushTarget, popTarget } from "./dep";
 
 let id = 0;
 
 // 给每个属性增加一个dep
 export class Watcher{
-    constructor(vm, fn, options){
+    constructor(vm, exprOrFn, options, cb){
         this.id = id++;
-        this.render = options;//表示是一个渲染函数
+        this.renderWatcher = options;//表示是一个渲染函数
+        if(typeof exprOrFn === 'string'){
+            this.getter = function(){
+                // console.log("vm[exprOrFn]: ", vm[exprOrFn]);
+                return vm[exprOrFn]
+            }
+        }else{
+            this.getter = exprOrFn;//getter意味着这个函数可以发生取值操作
+        }
         this.deps = [];     //后续实现计算属性和一些清理工作需要用到
         this.depsId =new Set();
-        this.getter = fn;
-        this.get()   //意味着这个函数发生取值操作
+        this.lazy = options.lazy
+        this.cb = cb
+        this.dirty = this.lazy
+        this.vm = vm
+        this.user = options.user;
+        
+        this.value = this.lazy ? undefined : this.get()   //意味着这个函数发生取值操作
     }
     get(){
         // this:更新函数所在的那个watcher  类中的this都是实例 这里的this=> Watcher
-        Dep.target = this;  //静态属性就是只有一份  
-        this.getter();  //回去vm上取值
-        Dep.target = null;
-
+        // Dep.target = this;  //静态属性就是只有一份  实现计算属性时替换为pushTarget(this)
+        pushTarget(this)
+        let value = this.getter.call(this.vm);//会去vm上取值  
+        // Dep.target = null;   //实现计算属性时替换为popTarget()
+        popTarget()
+        return value
+    }
+    evaluate(){        
+        // 获取到用户函数的返回值，同时还要将dirty改为false,标识为脏
+        this.value = this.get();
+        this.dirty = false;
+    }
+    depend(){
+        let i = this.deps.length;
+        while(i--){            
+            this.deps[i].depend()   //让计算属性watcher也收集渲染watcher
+        }
     }
     addDep(dep){    //一个事件对应着多个属性 重复的属性也不用记录
         let id = dep.id;
@@ -28,12 +54,19 @@ export class Watcher{
         }
     }
     updata(){
-        // this.get()  //重新更新
-        queueWatcher(this)  //把当前watcher存起来  放到一个队列里
+        if(this.lazy){
+            this.dirty = true
+        }else{
+            // this.get()  //重新更新
+            queueWatcher(this)  //把当前watcher存起来  放到一个队列里
+        }
     };
     run(){
-        // console.log("run");
-        this.get()
+        let oldValue = this.value;
+        let newValue = this.get();
+        if(this.user){
+            this.cb.call(this.vm, newValue, oldValue)
+        }
     }
 }
 let queue = [];

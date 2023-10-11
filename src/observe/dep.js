@@ -23,3 +23,14 @@ export class Dep{
 
 Dep.target = null;
 
+let stack = []
+export function pushTarget(watcher){
+    // debugger
+    stack.push(watcher);
+    Dep.target = watcher
+}
+export function popTarget(){
+    // debugger
+    stack.pop();
+    Dep.target = stack[stack.length - 1]
+}

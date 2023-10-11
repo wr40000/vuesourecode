@@ -96,6 +96,10 @@ export function mountComponent(vm, el){
     const updataComponent = () => {
         vm._updata(vm._render());   //虚拟节点扩展为真实节点
     }
+    // 我们可以给模板里的属性增加以一个收集器dep
+    // 页面渲染的时候 我们将渲染逻辑封装到watcher中  vm._updata(vm._render())
+    // 让dep记住这个wetcher即可，稍后属性表变化了可以找到对应的dep中的存放的wetcher进行
+    // 重新渲染
     const watcher = new Watcher(vm, updataComponent, true)
     // console.log(watcher);
     

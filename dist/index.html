@@ -15,15 +15,8 @@
             <p>{{arr[2]}}</p>
         </span>
     </div> -->
-    <!-- 我们可以给模板里的属性增加以一个收集器dep -->
-    <!-- 页面渲染的时候 我们将渲染逻辑封装到watcher中  vm._updata(vm._render()) -->
-    <!-- 让dep记住这个wetcher即可，稍后属性表变化了可以找到对应的dep中的存放的wetcher进行 -->
-    <!-- 重新渲染 -->
     <div id="app" key="app" style="color:red;background-color:yellow;">
-        <div style="color:red" key="div">
-            {{arr}}
-        </div>
-        <div>{{a}}</div>
+    {{work}}{{worker}}         
     </div>
     <script src="vue.js"></script>
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
@@ -56,13 +49,61 @@
             },
             // el: "#app",
             // template: '<div>蔡徐坤</div>'
-            created() {
-                // console.log("created--self");
+            // created() {
+            //     console.log("created--self");
+            // },
+            computed:{
+                worker:{
+                    get(){
+                        console.log("run");
+                        return this.name + this.work
+                    },
+                    set(newValue){
+                        console.log(newValue);
+                        // return newValue
+                    }
+                }
             },
+            methods: {
+                fn(newValue, oldValue){
+                    console.log("fn");
+                }
+            },
+            watch:{
+                // 写法1: 直接写一个函数
+                worker(newValue, oldValue){
+                    console.log("写法1-newValue: ",newValue);
+                    console.log("写法1-oldValue: ",oldValue);
+                }
+                // 'worker':(newValue, oldValue)=>{
+                //     console.log("写法1-newValue: ",newValue);
+                //     console.log("写法1-oldValue: ",oldValue);
+                // }
+                // 写法2: 数组
+                // worker: [                    
+                //     (newValue, oldValue) => {
+                //         console.log("newValue: ",newValue);
+                //     },
+                //     (newValue, oldValue) => {
+                //         console.log("newValue: ",newValue);
+                //     }
+                // ]
+            }
         })
         vm.$mount('#app')
 
-        // 下一步: 属性和我们的视图关联起来，做到数据变化可以自动更新视图(观察者模式)
+        // watch写法3: $watch
+        // 底层其实调用的就是$watch的方法，即使方法1或者方法2，最终都是调用$watch
+        // vm.$watch(
+        //     () => vm.worker,
+        //     // function exprOrFn(){return vm.worker},
+        //     // 'work',    // 或者写成这样            
+        //     function cb(newValue, oldValue){
+        //         console.log("$watch-newValue: ",newValue);
+        //         console.log("$watch-oldValue: ",oldValue);
+        //     })
+
+        // 属性和我们的视图关联起来，做到数据变化可以自动更新视图(观察者模式)
 
         // 现在还需要在数据变化后手动调用vm_updata 和 vm._render方法
         // setTimeout(()=>{
@@ -95,13 +136,24 @@
         // console.log(vm.$options);
 
         // 数组更新实现原理
-        // vm.arr.push(100)
-        vm.arr[4].push(100)
+        // vm.arr.push(100).
+        // vm.arr[4].push(100)
+        // setTimeout(()=>{
+        //     vm.a.b = 100;
+        //     vm.a.__ob__.dep.notify();   //$set原理
+        // },500)
+    
+        // 计算属性
+        // setTimeout(()=>{
+        //     console.log("111");
+        //     vm.name = 123
+        // },1000)
 
-        setTimeout(()=>{
-            vm.a.b = 100;
-            vm.a.__ob__.dep.notify();   //$set原理
-        },500)
+        // 监听属性
+        setTimeout(()=>{            
+            vm.work = 123456
+            vm.work = 123456789
+        },1000)
     </script>
 </body>
 
