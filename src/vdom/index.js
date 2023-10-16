@@ -25,12 +25,18 @@ export function createTextVNode(vm,text){
 // ast一样吗？ ast做的是语法层面的转化，他描述的是语法本身(html,css,js)，我们的虚拟DOM是
 // 描述的DOM元素，可以增加一些自定义的属性
 function vnode(vm,tag,key,data,children,text){
-    return {
+    let node = {
         vm,
         tag,
         key,
         data,
         children,
-        text
+        text,
+        //......
     }
+    // console.log(node);
+    return node
+}
+export function isSameVnode(vnode1, vnode2){
+    return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key
 }

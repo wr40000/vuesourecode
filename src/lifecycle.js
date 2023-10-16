@@ -1,51 +1,7 @@
 import {createElementVNode, createTextVNode} from './vdom'
 import {Watcher} from './observe/watcher'
+import {createElm, patchProps, patch} from './vdom/patch'
 
-function createElm(vnode){
-    //              (标签名 key)
-    //          vnode(div app)
-    //              /           \
-    //    vonde(div div)         vnode(span span)
-    let {tag,data,children,text} = vnode;
-    if(typeof tag === 'string'){    //标签
-        vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性
-        patchProps(vnode.el, data)
-        children.forEach((child) => {
-            // console.log(vnode);
-            vnode.el.appendChild(createElm(child))  //递归，不断地向vnode.el里添加html元素
-        })        
-    }else{
-        vnode.el = document.createTextNode(text)
-    }
-    return vnode.el
-}
-function patchProps(el, props){
-    for(let key in props){
-        if(key === 'style'){
-            for(let styleName in props.style){
-                el.style[styleName] = props.style[styleName]
-            }
-        }else{
-            el.setAttribute(key, props[key])
-        }
-    }
-}
-function patch(oldVNode, vnode){
-    // 写的是初渲染流程
-    const isRealELement = oldVNode.nodeType;
-    if(isRealELement){
-        const elm = oldVNode;
-        const parentElm = elm.parentNode;
-        // console.log(parentElm, vnode);
-        let newElm = createElm(vnode);
-        parentElm.insertBefore(newElm, elm.nextSibling);
-        parentElm.removeChild(elm);
-
-        return newElm
-    }else{
-        // diff算法
-    }
-}
 export function initLifeCycle(Vue){
     Vue.prototype._updata = function(vnode){
         const vm = this;
@@ -126,3 +82,4 @@ export function callHook(vm, hook){ // 调用钩子函数
         })
     }
 }
+
