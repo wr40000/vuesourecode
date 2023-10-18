@@ -75,7 +75,6 @@ export function compileToFunction(html){
     let ast = parseHTML(html)
     let code = codegen(ast);
     
-    // console.log(code);
     code = `with(this){return ${code}}`;   //with作用是使代码可以访问传进来的this的属性
     let render = new Function(code);    //根据代码生成render函数
 

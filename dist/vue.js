@@ -757,8 +757,6 @@
   function compileToFunction(html) {
     var ast = parseHTML(html);
     var code = codegen(ast);
-
-    // console.log(code);
     code = "with(this){return ".concat(code, "}"); //with作用是使代码可以访问传进来的this的属性
     var render = new Function(code); //根据代码生成render函数
 
@@ -789,6 +787,7 @@
 
   //  _v()
   function createTextVNode(vm, text) {
+    console.log("text: ", text);
     return vnode(vm, undefined, undefined, undefined, undefined, text);
   }
 
@@ -914,7 +913,7 @@
     }
   }
   function updateChildren(el, oldChildren, newChildren) {
-    console.log(oldChildren, newChildren);
+    // console.log(oldChildren, newChildren);
     var oldStartIndex = 0;
     var newStartIndex = 0;
     var oldEndIndex = oldChildren.length - 1;
@@ -923,8 +922,25 @@
     var newStartVnode = newChildren[0];
     var oldEndVnode = oldChildren[oldEndIndex];
     var newEndVnode = newChildren[newEndIndex];
+    function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (child, index) {
+        map[child.key] = index;
+      });
+      return map;
+    }
+    var map = makeIndexByKey(oldChildren);
+
+    // 我们循环的时候为什么要用key
+    // 每次直接更新DOM
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-      if (isSameVnode(oldStartVnode, newStartVnode)) {
+      if (!oldStartVnode) {
+        //处理因为索引表导致当前索引对应的旧节点出现undefined，需要跳过
+        oldStartVnode = oldChildren[++oldStartIndex]; //头指针
+      } else if (!oldEndVnode) {
+        //处理因为索引表导致当前索引对应的旧节点出现undefined，需要跳过
+        oldEndVnode = oldChildren[--oldEndIndex]; //尾指针
+      } else if (isSameVnode(oldStartVnode, newStartVnode)) {
         //头头比对
         patchVnode(oldStartVnode, newStartVnode); //相同节点，递归比较子节点
         oldStartVnode = oldChildren[++oldStartIndex];
@@ -935,24 +951,33 @@
         patchVnode(oldEndVnode, newEndVnode); //相同节点，递归比较子节点
         oldEndVnode = oldChildren[--oldEndIndex];
         newEndVnode = newChildren[--newEndIndex];
-        // 开始比较开头节点
       } else if (isSameVnode(oldEndVnode, newStartVnode)) {
         //交叉比对
         patchVnode(oldEndVnode, newStartVnode);
         el.insertBefore(oldEndVnode.el, oldStartVnode.el);
         oldEndVnode = oldChildren[--oldEndIndex];
         newStartVnode = newChildren[++newStartIndex];
-        // 开始比较开头节点
       } else if (isSameVnode(oldStartVnode, newEndVnode)) {
-        //交叉比对
+        //头尾  尾头
         patchVnode(oldStartVnode, newEndVnode);
-        el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        // insertBefore具备移动性，会将原来的元素移走
+        el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling); //将老的尾巴移到前边去
         oldStartVnode = oldChildren[++oldStartIndex];
         newEndVnode = newChildren[--newEndIndex];
-        // 开始比较开头节点
+      } else {
+        // 乱序比对
+        var moveIndex = map[newStartVnode.key];
+        if (moveIndex !== undefined) {
+          var moveVnode = oldChildren[moveIndex]; //找到对应虚拟节点
+          el.insertBefore(moveVnode.el, oldStartVnode.el);
+          oldChildren[moveIndex] = undefined; //表示这个节点已经移走了
+          patchVnode(moveVnode, newStartVnode); //比较属性和子节点
+        } else {
+          el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        }
+        newStartVnode = newChildren[++newStartIndex];
       }
     }
-
     if (newStartIndex <= newEndIndex) {
       //新的多了  多余的就插入进去
       for (var i = newStartIndex; i <= newEndIndex; i++) {
@@ -966,8 +991,10 @@
     if (oldStartIndex <= oldEndIndex) {
       //老的多了  删除老的
       for (var _i = oldStartIndex; _i <= oldEndIndex; _i++) {
-        var _childEl = createElm(oldChildren[_i]);
-        el.removeChild(_childEl);
+        if (oldChildren[_i]) {
+          var _childEl = oldChildren[_i].el;
+          el.removeChild(_childEl);
+        }
       }
     }
 
@@ -1005,10 +1032,11 @@
       return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
     };
     Vue.prototype._s = function (value) {
-      if (typeof value !== 'Object') return value;
+      if (_typeof(value) !== 'object') return value;
       return JSON.stringify(value);
     };
     Vue.prototype._render = function () {
+      // debugger             
       var vm = this;
       // 让with中的this 指向 vm
       // 当渲染的时候会去实例上取值，我们就可以将属性和视图绑定在一起
@@ -1164,7 +1192,7 @@
   document.body.appendChild(el);
 
   // let render2 = compileToFunction('<span>{{name}}</span>');
-  var render2 = compileToFunction("<ul a=\"1\" key=\"a\" style=\"color:#0000ff;background-color: #00ff00\">\n<li key=\"b\">2</li>\n<li key=\"c\">3</li>  \n<li key=\"d\">4</li>        \n<li key=\"a\">1</li>\n</ul>");
+  var render2 = compileToFunction("<ul a=\"1\" key=\"a\" style=\"color:#0000ff;background-color: #00ff00\">\n<li key=\"b\">2</li>\n<li key=\"m\">5</li>\n<li key=\"a\">1</li>\n<li key=\"p\">6</li>\n<li key=\"c\">3</li>  \n<li key=\"q\">7</li>        \n</ul>");
   var vm2 = new Vue({
     data: {
       name: '第二次'

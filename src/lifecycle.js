@@ -29,14 +29,15 @@ export function initLifeCycle(Vue){
         return createElementVNode(this, ...arguments)
     }
     // _v(text)
-    Vue.prototype._v = function(){      
+    Vue.prototype._v = function(){              
         return createTextVNode(this, ...arguments)
     }
     Vue.prototype._s = function(value){      
-        if(typeof value !== 'Object')  return value
+        if(typeof value !== 'object')  return value
         return JSON.stringify(value)
     }
-    Vue.prototype._render = function(){        
+    Vue.prototype._render = function(){   
+        // debugger             
         const vm = this;
         // 让with中的this 指向 vm
         // 当渲染的时候会去实例上取值，我们就可以将属性和视图绑定在一起

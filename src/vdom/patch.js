@@ -98,7 +98,7 @@ function mountChildren(el, newChildren){
 }
 
 function updateChildren( el, oldChildren, newChildren ){
-    console.log(oldChildren, newChildren);
+    // console.log(oldChildren, newChildren);
     let oldStartIndex = 0;
     let newStartIndex = 0;
     let oldEndIndex = oldChildren.length - 1;
@@ -110,8 +110,23 @@ function updateChildren( el, oldChildren, newChildren ){
     let oldEndVnode = oldChildren[oldEndIndex];
     let newEndVnode = newChildren[newEndIndex];
 
+    function makeIndexByKey(children){
+        let map = {}
+        children.forEach((child, index)=>{
+            map[child.key] = index
+        })
+        return map
+    }
+    let map = makeIndexByKey(oldChildren)
+
+    // 我们循环的时候为什么要用key
+    // 每次直接更新DOM
     while(oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex){
-        if(isSameVnode(oldStartVnode, newStartVnode)){  //头头比对
+        if(!oldStartVnode){//处理因为索引表导致当前索引对应的旧节点出现undefined，需要跳过
+            oldStartVnode = oldChildren[++oldStartIndex]//头指针
+        }else if(!oldEndVnode){//处理因为索引表导致当前索引对应的旧节点出现undefined，需要跳过
+            oldEndVnode = oldChildren[--oldEndIndex]//尾指针
+        }else if(isSameVnode(oldStartVnode, newStartVnode)){  //头头比对
             patchVnode(oldStartVnode, newStartVnode)    //相同节点，递归比较子节点
             oldStartVnode = oldChildren[++oldStartIndex];
             newStartVnode = newChildren[++newStartIndex];
@@ -120,19 +135,29 @@ function updateChildren( el, oldChildren, newChildren ){
             patchVnode(oldEndVnode, newEndVnode)    //相同节点，递归比较子节点
             oldEndVnode = oldChildren[--oldEndIndex];
             newEndVnode = newChildren[--newEndIndex];
-            // 开始比较开头节点
         }else if(isSameVnode(oldEndVnode, newStartVnode)){  //交叉比对
             patchVnode(oldEndVnode, newStartVnode)  
             el.insertBefore(oldEndVnode.el, oldStartVnode.el);
             oldEndVnode = oldChildren[--oldEndIndex];
             newStartVnode = newChildren[++newStartIndex];
-            // 开始比较开头节点
-        }else if(isSameVnode(oldStartVnode, newEndVnode)){  //交叉比对
+        }else if(isSameVnode(oldStartVnode, newEndVnode)){  //头尾  尾头
             patchVnode(oldStartVnode, newEndVnode)  
-            el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+            // insertBefore具备移动性，会将原来的元素移走
+            el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);  //将老的尾巴移到前边去
             oldStartVnode = oldChildren[++oldStartIndex];
             newEndVnode = newChildren[--newEndIndex];
-            // 开始比较开头节点
+        }else{
+            // 乱序比对
+            let moveIndex = map[newStartVnode.key];
+            if(moveIndex !== undefined){
+                let moveVnode = oldChildren[moveIndex];//找到对应虚拟节点
+                el.insertBefore(moveVnode.el, oldStartVnode.el);
+                oldChildren[moveIndex] = undefined;//表示这个节点已经移走了
+                patchVnode(moveVnode, newStartVnode);//比较属性和子节点
+            }else{
+                el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+            }
+            newStartVnode = newChildren[++newStartIndex]
         }
     }
 
@@ -147,8 +172,10 @@ function updateChildren( el, oldChildren, newChildren ){
 
     if(oldStartIndex <= oldEndIndex){   //老的多了  删除老的
         for(let i = oldStartIndex; i <= oldEndIndex; i++){
-            let childEl = createElm(oldChildren[i])
-            el.removeChild(childEl)
+            if(oldChildren[i]){
+                let childEl = oldChildren[i].el
+                el.removeChild(childEl)
+            }
         }
     }
 
