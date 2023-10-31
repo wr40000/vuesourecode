@@ -9,10 +9,14 @@ export class Watcher{
         this.renderWatcher = options;//表示是一个渲染函数
         if(typeof exprOrFn === 'string'){
             this.getter = function(){
+                // console.log("cb: ", cb);
+                // console.log("options: ", options);
+                // console.log("exprOrFn: ", exprOrFn);
                 // console.log("vm[exprOrFn]: ", vm[exprOrFn]);
                 return vm[exprOrFn]
             }
         }else{
+            // console.log("exprOrFn: ", exprOrFn);
             this.getter = exprOrFn;//getter意味着这个函数可以发生取值操作
         }
         this.deps = [];     //后续实现计算属性和一些清理工作需要用到
@@ -41,7 +45,8 @@ export class Watcher{
     }
     depend(){
         let i = this.deps.length;
-        while(i--){            
+        while(i--){         
+            // debugger               
             this.deps[i].depend()   //让计算属性watcher也收集渲染watcher
         }
     }

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>diff</title>
+</head>
+
+<body>
+    <!-- <div id="app" style="background: linear-gradient(90deg,rgba(0, 0, 255, 0.308),red);">{{name}}
+        <my-button></my-button> 
+        <div>
+            {{tool}}
+            <span id="spanExtend">{{arr}}</span>
+        </div>
+    </div> -->
+    <div id="root"></div>
+       
+    <script src="vue.js"></script>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
+    <script>
+        // const vm = new Vue({
+        //     data() {
+        //         return {
+        //             name: "随风",
+        //             work: "盗贼",
+        //             worker: "self",
+        //             tool: {
+        //                 "超亮火把": 689,
+        //                 "铁皮药剂": 30
+        //             },
+        //             arr: ["FSX", "TONE", "DEAD", { "JNTM": "XHZ" },[1,2]],
+        //             a:{a:100}
+        //         }
+        //     },
+        //     // components:{ //js原型链 自己没有再向外找
+        //     //     "my-button": Vue.extend({
+        //     //         template: '<button>内部</button>'
+        //     //     })
+        //     // }
+        // })
+        // vm.$mount('#app')
+
+        // Vue.component("my-button",{
+        //     template: '<button>全局button</button>'
+        // })
+        // 创造了一个子类，继承了Vue上的原型和方法
+        let Sub = Vue.extend({
+            template: "<button>子组件<my-button></my-button></button>",
+            components: {"my-button": {
+                template: '<button>子组件自己生命的button</button>'
+        }}
+        })
+
+        // Vue.component("my-button", Sub)
+        new Sub().$mount('#root')
+    </script>
+</body>
+
+</html>

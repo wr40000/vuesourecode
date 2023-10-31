@@ -29,12 +29,12 @@ export function initMixin(Vue){
             if(!ops.template && el){        // 没写template用外部的template
                 template = el.outerHTML
             }else{
-                if(el){
+                // if(el){
                     template = ops.template  // 写了template用自己的的template
-                }
+                // }
             }
             // console.log(template);
-            if(template){
+            if(template){                
                 const render = compileToFunction(template)
                 ops.render = render
             }

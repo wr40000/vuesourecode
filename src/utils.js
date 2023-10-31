@@ -14,6 +14,20 @@ LIFECYCLE.forEach((hook) => {
     }
   };
 });
+
+strats.components = function(parentVal, childVal){
+  const res = Object.create(parentVal);
+  
+  if(childVal){
+    for(let key in childVal){      
+      // 返回的是构造的对象 可以拿到富强原型上的属性，并且将儿子的都拷贝到自己身上
+      res[key] = childVal[key];
+    }
+  }
+
+  return res;
+}
+
 export function mergeOptions(parent, child) {
   // console.log("parent: ",parent);
   const options = {};
@@ -34,6 +48,7 @@ export function mergeOptions(parent, child) {
       // 如果不在策略中
       options[key] = child[key] || parent[key]; // 优先采用儿子
     }
-  }
+  }  
+  // debugger
   return options;
 }

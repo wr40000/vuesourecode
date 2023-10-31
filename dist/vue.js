@@ -299,10 +299,14 @@
       this.renderWatcher = options; //表示是一个渲染函数
       if (typeof exprOrFn === 'string') {
         this.getter = function () {
+          // console.log("cb: ", cb);
+          // console.log("options: ", options);
+          // console.log("exprOrFn: ", exprOrFn);
           // console.log("vm[exprOrFn]: ", vm[exprOrFn]);
           return vm[exprOrFn];
         };
       } else {
+        // console.log("exprOrFn: ", exprOrFn);
         this.getter = exprOrFn; //getter意味着这个函数可以发生取值操作
       }
 
@@ -338,6 +342,7 @@
       value: function depend() {
         var i = this.deps.length;
         while (i--) {
+          // debugger               
           this.deps[i].depend(); //让计算属性watcher也收集渲染watcher
         }
       }
@@ -538,8 +543,8 @@
       }
       if (Dep.target) {
         //渲染watcher                       
-        watcher.depend(); //计算属性出栈后，应该让计算属性watcher里面的w属性也去收集上层watcher
-        // 月收集上一层的watcher
+        watcher.depend(); //计算属性出栈后，应该让计算属性watcher里面的属性也去收集上层watcher
+        // 去收集上一层的watcher
       }
 
       return watcher.value;
@@ -712,37 +717,31 @@
     }).join(',');
   }
   function gen(node) {
-    // console.log(node.type);
     if (node.type === 1) {
-      // console.log(`gen(node)${node.type}`,node);
-      var text = codegen(node);
-      // console.log("gen(node):",text);
-      return text;
+      return codegen(node);
     } else {
-      var _text = node.text;
-      // console.log(text);
-      if (!defaultTagRE.test(_text)) {
-        // console.log(`_v(${text})`);
-        return "_v(".concat(_text, ")");
+      // 文本
+      var text = node.text;
+      if (!defaultTagRE.test(text)) {
+        return "_v(".concat(JSON.stringify(text), ")");
       } else {
+        //_v( _s(name)+'hello' + _s(name))
         var tokens = [];
         var match;
         defaultTagRE.lastIndex = 0;
         var lastIndex = 0;
-        while (match = defaultTagRE.exec(_text)) {
-          var index = match.index;
+        // split
+        while (match = defaultTagRE.exec(text)) {
+          var index = match.index; // 匹配的位置  {{name}} hello  {{name}} hello 
           if (index > lastIndex) {
-            // console.log(text.slice(lastIndex, index));
-            tokens.push(JSON.stringify(_text.slice(lastIndex, index)));
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
           }
-          // console.log(index,"**");
           tokens.push("_s(".concat(match[1].trim(), ")"));
           lastIndex = index + match[0].length;
         }
-        if (lastIndex < _text.length) {
-          tokens.push(JSON.stringify(_text.slice(lastIndex)));
+        if (lastIndex < text.length) {
+          tokens.push(JSON.stringify(text.slice(lastIndex)));
         }
-        // console.log("tokens: ",tokens);
         return "_v(".concat(tokens.join('+'), ")");
       }
     }
@@ -764,6 +763,9 @@
   }
 
   // h()  _c()
+  var isReservedTag = function isReservedTag(tag) {
+    return ['a', 'div', 'p', 'button', 'ul', 'li', 'span'].includes(tag);
+  };
   function createElementVNode(vm, tag, data) {
     // console.log(vm);
     // console.log("tag: ",tag);
@@ -782,25 +784,46 @@
     for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
       children[_key - 3] = arguments[_key];
     }
-    return vnode(vm, tag, key, data, children);
+    if (isReservedTag(tag)) {
+      return vnode(vm, tag, key, data, children);
+    } else {
+      var Ctor = vm.$options.components[tag];
+      return createComponentVnode(vm, tag, key, data, children, Ctor);
+    }
+  }
+  function createComponentVnode(vm, tag, key, data, children, Ctor) {
+    // console.log(vm.$options._base); //拿到Vue       
+    if (_typeof(Ctor) === 'object') {
+      Ctor = vm.$options._base.extend(Ctor);
+    }
+    data.hook = {
+      init: function init(vnode) {
+        var instance = vnode.componentInstance = new vnode.componentOptions.Ctor();
+        instance.$mount();
+      }
+    };
+    return vnode(vm, tag, key, data, children, null, {
+      Ctor: Ctor
+    });
   }
 
   //  _v()
   function createTextVNode(vm, text) {
-    console.log("text: ", text);
+    // console.log("text: ",text);
     return vnode(vm, undefined, undefined, undefined, undefined, text);
   }
 
   // ast一样吗？ ast做的是语法层面的转化，他描述的是语法本身(html,css,js)，我们的虚拟DOM是
   // 描述的DOM元素，可以增加一些自定义的属性
-  function vnode(vm, tag, key, data, children, text) {
+  function vnode(vm, tag, key, data, children, text, componentOptions) {
     var node = {
       vm: vm,
       tag: tag,
       key: key,
       data: data,
       children: children,
-      text: text
+      text: text,
+      componentOptions: componentOptions
       //......
     };
     // console.log(node);
@@ -810,9 +833,21 @@
     return vnode1.tag === vnode2.tag && vnode1.key === vnode2.key;
   }
 
+  function createComponent(vnode) {
+    var i = vnode.data;
+    if ((i = i.hook) && (i = i.init)) {
+      // debugger
+      i(vnode); // 初始化组件 ， 找到init方法
+    }
+
+    if (vnode.componentInstance) {
+      return true; // 说明是组件
+    }
+  }
+
   function createElm(vnode) {
-    //              (标签名 key)
-    //          vnode(div app)
+    //                (标签名 key)
+    //              vnode(div app)
     //              /           \
     //    vonde(div div)         vnode(span span)
     var tag = vnode.tag,
@@ -821,6 +856,11 @@
       text = vnode.text;
     if (typeof tag === 'string') {
       //标签
+      // 创建真实元素，也要区分是组件还是元素
+      if (createComponent(vnode)) {
+        // 组件 vnode.componentInstance.$el
+        return vnode.componentInstance.$el;
+      }
       vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性
       patchProps(vnode.el, {}, data);
       children.forEach(function (child) {
@@ -847,7 +887,7 @@
       //老的属性有
       if (!props[_key]) {
         //新的没有要删除
-        el.removeAttribute[_key];
+        el.removeAttribute(_key);
       }
     }
     for (var _key2 in props) {
@@ -862,8 +902,15 @@
     }
   }
   function patch(oldVNode, vnode) {
+    // mount()
+    if (!oldVNode) {
+      // 这就是组件的挂载        
+      return createElm(vnode); // vm.$el  对应的就是组件渲染的结果了
+    }
     // 写的是初渲染流程
+    // debugger
     var isRealELement = oldVNode.nodeType;
+    // console.log(oldVNode.nodeType);
     if (isRealELement) {
       var elm = oldVNode;
       var parentElm = elm.parentNode;
@@ -871,6 +918,7 @@
       var newElm = createElm(vnode);
       parentElm.insertBefore(newElm, elm.nextSibling);
       parentElm.removeChild(elm);
+      // console.log(elm);
       return newElm;
     } else {
       return patchVnode(oldVNode, vnode);
@@ -968,20 +1016,28 @@
         // 乱序比对
         var moveIndex = map[newStartVnode.key];
         if (moveIndex !== undefined) {
-          var moveVnode = oldChildren[moveIndex]; //找到对应虚拟节点
-          el.insertBefore(moveVnode.el, oldStartVnode.el);
-          oldChildren[moveIndex] = undefined; //表示这个节点已经移走了
+          //判断老节点的孩子中是否有key为newStartVnode.key的child
+          var moveVnode = oldChildren[moveIndex]; //有就找到对应的虚拟儿子节点
+          el.insertBefore(moveVnode.el, oldStartVnode.el); //直接将该孩子插入老节点的第一位，因为取的是新虚拟节点拍在第一位的节点
+          oldChildren[moveIndex] = undefined; //将该孩子原位置设为undefined，表示这个节点已经移走了，key正是为了这种情况创立的
           patchVnode(moveVnode, newStartVnode); //比较属性和子节点
         } else {
+          //表示老节点的孩子中没有key为newStartVnode.key的child，那么直接创建一个并且插入到旧虚拟节点的第一位
           el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
         }
         newStartVnode = newChildren[++newStartIndex];
       }
     }
+    // 经过之上的while循环之后，无非就剩下了两种情况：
+    //  1> 要么新节点还有多的，
+    //  2> 或者旧结点有多余的
     if (newStartIndex <= newEndIndex) {
       //新的多了  多余的就插入进去
       for (var i = newStartIndex; i <= newEndIndex; i++) {
+        console.log("newStartIndex: ", newStartIndex);
+        console.log("newEndIndex: ", newEndIndex);
         var childEl = createElm(newChildren[i]);
+        // 这里可能是向前追加，也可能是向后追加
         var anchor = newChildren[newEndIndex + 1] ? newChildren[newEndIndex + 1].el : null;
         // el.appendChild(childEl)
         el.insertBefore(childEl, anchor); //anchor为null则会认为是appendchildren
@@ -1005,8 +1061,15 @@
     Vue.prototype._updata = function (vnode) {
       var vm = this;
       var el = vm.$el;
-      var elm = patch(el, vnode);
-      vm.$el = elm;
+      var preVnode = vm._vnode;
+      vm._vnode = vnode; //组件第一次的渲染的虚拟节点保存到_vnode上
+
+      if (preVnode) {
+        //之前渲染过了
+        vm.$el = patch(preVnode, vnode);
+      } else {
+        vm.$el = patch(el, vnode);
+      }
     };
 
     // _c(
@@ -1050,7 +1113,7 @@
     // 1.调用render方法生成虚拟dom
     // vm._render();   //vm.$options.render() 虚拟节点
     var updataComponent = function updataComponent() {
-      vm._updata(vm._render()); //虚拟节点扩展为真实节点
+      vm._updata(vm._render()); //虚拟节点扩展为真实节点        
     };
     // 我们可以给模板里的属性增加以一个收集器dep
     // 页面渲染的时候 我们将渲染逻辑封装到watcher中  vm._updata(vm._render())
@@ -1101,6 +1164,16 @@
     };
   });
 
+  strats.components = function (parentVal, childVal) {
+    var res = Object.create(parentVal);
+    if (childVal) {
+      for (var key in childVal) {
+        // 返回的是构造的对象 可以拿到富强原型上的属性，并且将儿子的都拷贝到自己身上
+        res[key] = childVal[key];
+      }
+    }
+    return res;
+  };
   function mergeOptions(parent, child) {
     // console.log("parent: ",parent);
     var options = {};
@@ -1121,7 +1194,7 @@
         options[key] = child[key] || parent[key]; // 优先采用儿子
       }
     }
-
+    // debugger
     return options;
   }
 
@@ -1150,9 +1223,9 @@
           // 没写template用外部的template
           template = el.outerHTML;
         } else {
-          if (el) {
-            template = ops.template; // 写了template用自己的的template
-          }
+          // if(el){
+          template = ops.template; // 写了template用自己的的template
+          // }
         }
         // console.log(template);
         if (template) {
@@ -1165,11 +1238,34 @@
   }
 
   function initGlobalAPI(Vue) {
-    Vue.options = {};
+    Vue.options = {
+      _base: Vue
+    };
     Vue.mixin = function (mixin) {
       // 我们希望将用户的选项和全局的options进行合并
       this.options = mergeOptions(this.options, mixin);
       return this;
+    };
+    Vue.extend = function (options) {
+      // 就是实现根据用户的参数，返回一个构造函数而已
+      function Sub() {
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        //最终使用一个组件，就是new一个实例
+        this._init(options); //就是默认对子类进行初始化操作
+      }
+
+      Sub.prototype = Object.create(Vue.prototype); //Sub.prototype._proto_ === Vue.prototype
+      Sub.prototype.constructor = Sub;
+      // 将用户传递的选项的参数和全局的合并
+      Sub.options = mergeOptions(Vue.options, options); //保存用户传递的选项
+      // debugger
+      return Sub;
+    };
+    Vue.options.components = {}; //全局的指令
+    Vue.component = function (id, definition) {
+      // 如果definition已经是一个函数了，说明用户自己调用了Vue.extend
+      definition = typeof definition === 'function' ? definition : Vue.extend(definition);
+      Vue.options.components[id] = definition;
     };
   }
 
@@ -1180,30 +1276,6 @@
   initLifeCycle(Vue);
   initGlobalAPI(Vue); //全局API
   initStateMixin(Vue); //实现$nextTick $watch
-
-  var render1 = compileToFunction("<ul a=\"1\" key=\"a\" style=\"color:#0000ff;background-color: #ff0000\">    \n<li key=\"a\">1</li>\n<li key=\"b\">2</li>\n<li key=\"c\">3</li>  \n<li key=\"d\">4</li>    \n</ul>");
-  var vm1 = new Vue({
-    data: {
-      name: '第一次'
-    }
-  });
-  var preVnode = render1.call(vm1);
-  var el = createElm(preVnode);
-  document.body.appendChild(el);
-
-  // let render2 = compileToFunction('<span>{{name}}</span>');
-  var render2 = compileToFunction("<ul a=\"1\" key=\"a\" style=\"color:#0000ff;background-color: #00ff00\">\n<li key=\"b\">2</li>\n<li key=\"m\">5</li>\n<li key=\"a\">1</li>\n<li key=\"p\">6</li>\n<li key=\"c\">3</li>  \n<li key=\"q\">7</li>        \n</ul>");
-  var vm2 = new Vue({
-    data: {
-      name: '第二次'
-    }
-  });
-  var nextVnode = render2.call(vm2);
-  // console.log(nextVnode);
-
-  setTimeout(function () {
-    patch(preVnode, nextVnode);
-  }, 1000);
 
   return Vue;
 

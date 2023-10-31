@@ -1,11 +1,27 @@
 import {isSameVnode} from './index'
+
+function createComponent(vnode){
+    let i = vnode.data;
+    if((i = i.hook) && (i = i.init)){
+        // debugger
+        i(vnode); // 初始化组件 ， 找到init方法
+    }
+    if(vnode.componentInstance){
+        return true; // 说明是组件
+    }
+}
+
 export function createElm(vnode){
-    //              (标签名 key)
-    //          vnode(div app)
+    //                (标签名 key)
+    //              vnode(div app)
     //              /           \
     //    vonde(div div)         vnode(span span)
     let {tag,data,children,text} = vnode;
     if(typeof tag === 'string'){    //标签
+        // 创建真实元素，也要区分是组件还是元素
+        if(createComponent(vnode)){ // 组件 vnode.componentInstance.$el
+            return vnode.componentInstance.$el;
+        }
         vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性
         patchProps(vnode.el, {}, data)
         children.forEach((child) => {
@@ -29,7 +45,7 @@ export function patchProps(el, oldProps = {}, props = {}){
 
     for(let key in oldProps){   //老的属性有
         if(!props[key]){    //新的没有要删除
-            el.removeAttribute[key];
+            el.removeAttribute(key);
         }
     }
 
@@ -44,8 +60,14 @@ export function patchProps(el, oldProps = {}, props = {}){
     }
 }
 export function patch(oldVNode, vnode){
+    // mount()
+    if(!oldVNode){ // 这就是组件的挂载        
+        return createElm(vnode); // vm.$el  对应的就是组件渲染的结果了
+    }
     // 写的是初渲染流程
+    // debugger
     const isRealELement = oldVNode.nodeType;
+    // console.log(oldVNode.nodeType);
     if(isRealELement){
         const elm = oldVNode;
         const parentElm = elm.parentNode;
@@ -53,7 +75,7 @@ export function patch(oldVNode, vnode){
         let newElm = createElm(vnode);
         parentElm.insertBefore(newElm, elm.nextSibling);
         parentElm.removeChild(elm);
-
+        // console.log(elm);
         return newElm
     }else{
         return patchVnode(oldVNode, vnode)
@@ -149,21 +171,27 @@ function updateChildren( el, oldChildren, newChildren ){
         }else{
             // 乱序比对
             let moveIndex = map[newStartVnode.key];
-            if(moveIndex !== undefined){
-                let moveVnode = oldChildren[moveIndex];//找到对应虚拟节点
-                el.insertBefore(moveVnode.el, oldStartVnode.el);
-                oldChildren[moveIndex] = undefined;//表示这个节点已经移走了
+            if(moveIndex !== undefined){//判断老节点的孩子中是否有key为newStartVnode.key的child
+                let moveVnode = oldChildren[moveIndex];//有就找到对应的虚拟儿子节点
+                el.insertBefore(moveVnode.el, oldStartVnode.el);//直接将该孩子插入老节点的第一位，因为取的是新虚拟节点拍在第一位的节点
+                oldChildren[moveIndex] = undefined;//将该孩子原位置设为undefined，表示这个节点已经移走了，key正是为了这种情况创立的
                 patchVnode(moveVnode, newStartVnode);//比较属性和子节点
             }else{
+                //表示老节点的孩子中没有key为newStartVnode.key的child，那么直接创建一个并且插入到旧虚拟节点的第一位
                 el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
             }
             newStartVnode = newChildren[++newStartIndex]
         }
     }
-
+    // 经过之上的while循环之后，无非就剩下了两种情况：
+    //  1> 要么新节点还有多的，
+    //  2> 或者旧结点有多余的
     if(newStartIndex <= newEndIndex){   //新的多了  多余的就插入进去
         for(let i = newStartIndex; i <= newEndIndex; i++){
+            console.log("newStartIndex: ", newStartIndex);
+            console.log("newEndIndex: ", newEndIndex);
             let childEl = createElm(newChildren[i])
+            // 这里可能是向前追加，也可能是向后追加
             let anchor = newChildren[newEndIndex + 1] ?  newChildren[newEndIndex + 1].el : null;
             // el.appendChild(childEl)
             el.insertBefore(childEl, anchor)    //anchor为null则会认为是appendchildren

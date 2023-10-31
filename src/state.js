@@ -100,8 +100,8 @@ function createComputedGetter(key){
             watcher.evaluate()
         }
         if(Dep.target){     //渲染watcher                       
-            watcher.depend();   //计算属性出栈后，应该让计算属性watcher里面的w属性也去收集上层watcher
-            // 月收集上一层的watcher
+            watcher.depend();   //计算属性出栈后，应该让计算属性watcher里面的属性也去收集上层watcher
+            // 去收集上一层的watcher
         }
         return watcher.value
     }

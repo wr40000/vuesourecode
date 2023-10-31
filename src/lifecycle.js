@@ -6,8 +6,15 @@ export function initLifeCycle(Vue){
     Vue.prototype._updata = function(vnode){
         const vm = this;
         const el = vm.$el;
-        let elm = patch(el, vnode);
-        vm.$el = elm
+
+        const preVnode = vm._vnode;
+        vm._vnode = vnode;//组件第一次的渲染的虚拟节点保存到_vnode上
+
+        if(preVnode){//之前渲染过了
+            vm.$el = patch(preVnode, vnode)
+        }else{
+            vm.$el = patch(el, vnode)
+        }
     }
 
     // _c(
@@ -51,7 +58,7 @@ export function mountComponent(vm, el){
     // 1.调用render方法生成虚拟dom
     // vm._render();   //vm.$options.render() 虚拟节点
     const updataComponent = () => {
-        vm._updata(vm._render());   //虚拟节点扩展为真实节点
+        vm._updata(vm._render());   //虚拟节点扩展为真实节点        
     }
     // 我们可以给模板里的属性增加以一个收集器dep
     // 页面渲染的时候 我们将渲染逻辑封装到watcher中  vm._updata(vm._render())

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>diff</title>
+</head>
+
+<body>
+    <div id="app" style="background: linear-gradient(90deg,rgba(0, 0, 255, 0.308),red);">{{name}}</div>
+    <script src="vue.js"></script>
+    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
+    <script>
+        const vm = new Vue({
+            data() {
+                return {
+                    name: "随风",
+                    work: "盗贼",
+                    worker: "self",
+                    tool: {
+                        "超亮火把": 689,
+                        "铁皮药剂": 30
+                    },
+                    arr: ["FSX", "TONE", "DEAD", { "JNTM": "XHZ" },[1,2]],
+                    a:{a:100}
+                }
+            },
+        })
+        vm.$mount('#app')
+
+        setTimeout(()=>{            
+            vm.name = 123456
+        },1000)
+    </script>
+</body>
+
+</html>

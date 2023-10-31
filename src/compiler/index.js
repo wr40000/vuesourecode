@@ -1,5 +1,5 @@
 import {parseHTML} from './parse'
-var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
 
 function genProps(attrs){
     // console.log(attrs);
@@ -27,38 +27,33 @@ function genchildren(children){
         return text
     }).join(',')   
 }
-function gen(node){
-    // console.log(node.type);
-    if(node.type === 1){
-        // console.log(`gen(node)${node.type}`,node);
-        let text = codegen(node)
-        // console.log("gen(node):",text);
-        return text
-    }else{
+function gen(node) {
+    if (node.type === 1) {
+        return codegen(node);
+    } else {
+        // 文本
         let text = node.text
-        // console.log(text);
-        if(!defaultTagRE.test(text)){
-            // console.log(`_v(${text})`);
-            return `_v(${text})`
-        }else{
+        if (!defaultTagRE.test(text)) {
+            return `_v(${JSON.stringify(text)})`
+        } else {
+            //_v( _s(name)+'hello' + _s(name))
             let tokens = [];
+            
             let match;
-            defaultTagRE.lastIndex = 0
+            defaultTagRE.lastIndex = 0;
             let lastIndex = 0;
-            while(match = defaultTagRE.exec(text)){
-                let index = match.index;
-                if(index > lastIndex){
-                    // console.log(text.slice(lastIndex, index));
+            // split
+            while (match = defaultTagRE.exec(text)) {
+                let index = match.index; // 匹配的位置  {{name}} hello  {{name}} hello 
+                if (index > lastIndex) {
                     tokens.push(JSON.stringify(text.slice(lastIndex, index)))
                 }
-                // console.log(index,"**");
                 tokens.push(`_s(${match[1].trim()})`)
                 lastIndex = index + match[0].length
             }
-            if(lastIndex < text.length){
+            if (lastIndex < text.length) {
                 tokens.push(JSON.stringify(text.slice(lastIndex)))
             }
-            // console.log("tokens: ",tokens);
             return `_v(${tokens.join('+')})`
         }
     }

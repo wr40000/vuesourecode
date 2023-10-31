@@ -15,10 +15,10 @@
             <p>{{arr[2]}}</p>
         </span>
     </div> -->
-    <!-- <div id="app" key="app" style="color:red;background-color:yellow;">
+    <div id="app" key="app" style="color:red;background-color:yellow;">
     {{work}}{{worker}}         
-    </div> -->
-    <div id="app">mmmmmmmmmmm</div>
+    </div>
+    <!-- <div id="app"></div> -->
     <script src="vue.js"></script>
     <!-- <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.14/vue.js"></script> -->
     <script>
@@ -40,6 +40,7 @@
                 return {
                     name: "随风",
                     work: "盗贼",
+                    worker: "self",
                     tool: {
                         "超亮火把": 689,
                         "铁皮药剂": 30
@@ -53,18 +54,18 @@
             // created() {
             //     console.log("created--self");
             // },
-            computed:{
-                worker:{
-                    get(){
-                        // console.log("run");
-                        return this.name + this.work
-                    },
-                    set(newValue){
-                        console.log(newValue);
-                        // return newValue
-                    }
-                }
-            },
+            // computed:{
+            //     worker:{
+            //         get(){
+            //             // console.log("run");
+            //             return this.name + this.work
+            //         },
+            //         set(newValue){
+            //             console.log(newValue);
+            //             return newValue
+            //         }
+            //     }
+            // },
             methods: {
                 fn(newValue, oldValue){
                     console.log("fn");
@@ -72,10 +73,10 @@
             },
             watch:{
                 // 写法1: 直接写一个函数
-                worker(newValue, oldValue){
-                    console.log("写法1-newValue: ",newValue);
-                    console.log("写法1-oldValue: ",oldValue);
-                }
+                // worker(newValue, oldValue){
+                //     console.log("写法1-newValue: ",newValue);
+                //     console.log("写法1-oldValue: ",oldValue);
+                // }
                 // 'worker':(newValue, oldValue)=>{
                 //     console.log("写法1-newValue: ",newValue);
                 //     console.log("写法1-oldValue: ",oldValue);
@@ -98,7 +99,7 @@
         // vm.$watch(
         //     () => vm.worker,
         //     // function exprOrFn(){return vm.worker},
-        //     // 'work',    // 或者写成这样            
+        //     // 'worker',    // 或者写成这样            
         //     function cb(newValue, oldValue){
         //         console.log("$watch-newValue: ",newValue);
         //         console.log("$watch-oldValue: ",oldValue);
@@ -151,10 +152,10 @@
         // },1000)
 
         // 监听属性
-        // setTimeout(()=>{            
-        //     vm.work = 123456
-        //     vm.work = 123456789
-        // },1000)
+        setTimeout(()=>{            
+            vm.worker = 123456
+            vm.worker = 123456789
+        },1000)
     </script>
 </body>
 
