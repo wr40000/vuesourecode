@@ -20,6 +20,7 @@ export function createElm(vnode){
     if(typeof tag === 'string'){    //标签
         // 创建真实元素，也要区分是组件还是元素
         if(createComponent(vnode)){ // 组件 vnode.componentInstance.$el
+            // debugger
             return vnode.componentInstance.$el;
         }
         vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性

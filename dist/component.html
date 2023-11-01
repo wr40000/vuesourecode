@@ -42,9 +42,9 @@
         // })
         // vm.$mount('#app')
 
-        // Vue.component("my-button",{
-        //     template: '<button>全局button</button>'
-        // })
+        Vue.component("my-button",{
+            template: '<button>全局button</button>'
+        })
         // 创造了一个子类，继承了Vue上的原型和方法
         let Sub = Vue.extend({
             template: "<button>子组件<my-button></my-button></button>",

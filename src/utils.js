@@ -21,6 +21,7 @@ strats.components = function(parentVal, childVal){
   if(childVal){
     for(let key in childVal){      
       // 返回的是构造的对象 可以拿到富强原型上的属性，并且将儿子的都拷贝到自己身上
+      // debugger
       res[key] = childVal[key];
     }
   }

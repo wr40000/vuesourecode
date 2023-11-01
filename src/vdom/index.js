@@ -21,7 +21,8 @@ export function createElementVNode(vm,tag, data, ...children){
     if(isReservedTag(tag)){        
         return vnode(vm,tag,key,data,children)
     }else{
-        let Ctor = vm.$options.components[tag];
+        let Ctor = vm.$options.components[tag];        
+        // debugger
         return createComponentVnode(vm, tag, key, data, children, Ctor)
     }
 }

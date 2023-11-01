@@ -13,6 +13,7 @@ export function initGlobalAPI(Vue) {
   Vue.extend = function(options){
     // 就是实现根据用户的参数，返回一个构造函数而已
     function Sub(options = {}){ //最终使用一个组件，就是new一个实例
+      // debugger
       this._init(options);  //就是默认对子类进行初始化操作
     }
     Sub.prototype = Object.create(Vue.prototype); //Sub.prototype._proto_ === Vue.prototype

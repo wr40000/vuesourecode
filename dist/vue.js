@@ -788,6 +788,7 @@
       return vnode(vm, tag, key, data, children);
     } else {
       var Ctor = vm.$options.components[tag];
+      // debugger
       return createComponentVnode(vm, tag, key, data, children, Ctor);
     }
   }
@@ -859,6 +860,7 @@
       // 创建真实元素，也要区分是组件还是元素
       if (createComponent(vnode)) {
         // 组件 vnode.componentInstance.$el
+        // debugger
         return vnode.componentInstance.$el;
       }
       vnode.el = document.createElement(tag); //这里将真实节点和虚拟节点对应起来，后续如果修改属性
@@ -1169,6 +1171,7 @@
     if (childVal) {
       for (var key in childVal) {
         // 返回的是构造的对象 可以拿到富强原型上的属性，并且将儿子的都拷贝到自己身上
+        // debugger
         res[key] = childVal[key];
       }
     }
@@ -1251,6 +1254,7 @@
       function Sub() {
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         //最终使用一个组件，就是new一个实例
+        // debugger
         this._init(options); //就是默认对子类进行初始化操作
       }
 
