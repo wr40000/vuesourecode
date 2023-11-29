@@ -1,3 +1,11 @@
+# B站vue2.6源码学习笔记
+
+```
+【【vue+vuex+VueRouter源码】从零手写自己的vue】 https://www.bilibili.com/video/BV1JW4y1j7yE/?share_source=copy_web&vd_source=b13bf39ff616b673337790b360357231
+```
+
+
+
 ### **数据代理&数据劫持**
 
 **Vue.prototype._init**将用户options赋值给`vm.$options`，这里的vm是vue实例，
