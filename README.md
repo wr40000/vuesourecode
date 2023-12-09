@@ -1,4 +1,6 @@
-# B站vue2.6源码学习笔记
+[TOC]
+
+## B站vue2.6源码学习笔记
 
 ```
 【【vue+vuex+VueRouter源码】从零手写自己的vue】 https://www.bilibili.com/video/BV1JW4y1j7yE/?share_source=copy_web&vd_source=b13bf39ff616b673337790b360357231
@@ -951,7 +953,7 @@ strats.components = function(parentVal, childVal){
 
 `childVal 和 parentVal`的形式是这样的：
 
-![image-20231101105451226](Vue%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.assets/image-20231101105451226.png)
+![image-20231101105451226](README.assets/image-20231101105451226.png)
 
 ```js
 // 这段代码执行完Sub.prototype.constructor就是Vue了，所以要手动纠正
@@ -962,7 +964,7 @@ Sub.prototype.constructor = Sub;
 
 `Sub.prototype.constructor如果变成Vue`会导致
 
-![image-20231101110630431](Vue%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.assets/image-20231101110630431.png)
+![image-20231101110630431](README.assets/image-20231101110630431.png)
 
 ```js
 Vue.prototype._init = function(options){
@@ -1038,7 +1040,7 @@ function createComponentVnode(vm, tag, key, data, children, Ctor){
 
 `如果Ctor是个对象就要给转成一个类`
 
-![image-20231101112152681](Vue%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.assets/image-20231101112152681.png)
+![image-20231101112152681](README.assets/image-20231101112152681.png)
 
 `init方法`   `new vnode.componentOptions.Ctor` 先实例化一个Sub再赋值给
 
@@ -1097,7 +1099,7 @@ function createComponent(vnode){
 
 `vnode.componentInstance.$el`  其实就是一个真实节点
 
-![image-20231101114634397](Vue%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.assets/image-20231101114634397.png)
+![image-20231101114634397](README.assets/image-20231101114634397.png)
 
 
 
